@@ -5426,16 +5426,6 @@ function MarketingLogin() {
     <main className="login-shell">
       <section className="login-panel" aria-labelledby="login-title">
         <div className="login-brand-row">
-          <span className="login-bulb-logo" aria-hidden="true">
-            <span className="bulb-ray ray-one" />
-            <span className="bulb-ray ray-two" />
-            <span className="bulb-ray ray-three" />
-            <span className="bulb-ray ray-four" />
-            <span className="bulb-ray ray-five" />
-            <span className="bulb-dome" />
-            <span className="bulb-filament" />
-            <span className="bulb-base" />
-          </span>
           <div>
             <h1 id="login-title">
               Dharma <span>Marketing Tool</span>
