@@ -11,6 +11,12 @@ const env = { ...loadEnv(), ...process.env }
 const port = Number(env.PORT || env.API_PORT || 8787)
 const isVercel = Boolean(env.VERCEL)
 const vercelRequestBudgetMs = 52000
+const languageSettings = {
+  acceptLanguage: 'en-US,en;q=0.9,es-ES;q=0.8,es;q=0.7,pt-BR;q=0.6,pt;q=0.5',
+  claudeInstruction:
+    'Write the final JSON string values in English. If the captured Meta page text is in Spanish or Portuguese, you may use that language instead. Do not use any other language.',
+  locale: 'en_US',
+}
 
 function loadEnv() {
   const files = ['.env.local', '.env']
@@ -95,6 +101,7 @@ function metaLibraryUrl(company) {
     ad_type: 'all',
     country,
     is_targeted_country: 'false',
+    locale: languageSettings.locale,
     media_type: 'all',
     q: company,
     search_type: 'keyword_unordered',
@@ -159,6 +166,10 @@ async function captureCompanyPage(browser, company) {
 
   try {
     context = await browser.newContext({
+      extraHTTPHeaders: {
+        'Accept-Language': languageSettings.acceptLanguage,
+      },
+      locale: 'en-US',
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       viewport: {
@@ -285,6 +296,7 @@ Task:
 6. Use the product FAQ context for product-specific descriptions and claims. Stay careful with weight-loss claims: avoid guaranteed outcomes, diagnose/treat language, and unsafe medical promises.
 7. The campaign date, day type, and event name are for OUR recommended ad only. Do not use them to filter or reinterpret competitor ads. If competitor ads are not seasonal, still use their general patterns as inspiration and adapt our recommendation to the selected event.
 8. Focus recommendations only on the selected product. Do not mix Berberine Plus and GLP-1 details unless the selected product explicitly calls for it.
+9. ${languageSettings.claudeInstruction} Keep JSON keys exactly as shown in the schema.
 
 Brand context:
 ${JSON.stringify(brandContext, null, 2)}
