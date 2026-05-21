@@ -25,7 +25,7 @@
 .login-panel {
   width: min(100%, 420px);
   justify-self: end;
-  transform: translateX(-34px);
+  transform: translateX(-50px);
 }
 
 .login-brand-row {
@@ -398,6 +398,7 @@
 }
 
 @keyframes magazine-page-flip {
+
   0%,
   22% {
     opacity: 0;
@@ -564,6 +565,7 @@
 }
 
 @keyframes login-float-card {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0) rotate(-1deg);
@@ -575,6 +577,7 @@
 }
 
 @keyframes login-float-megaphone {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0) rotate(2deg);
@@ -586,6 +589,7 @@
 }
 
 @keyframes login-target-pulse {
+
   0%,
   100% {
     box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.28);
@@ -603,6 +607,7 @@
 }
 
 @keyframes login-orbit-drift {
+
   0%,
   100% {
     transform: translate3d(0, 0, 0);
@@ -614,6 +619,7 @@
 }
 
 @keyframes login-wave {
+
   0%,
   100% {
     opacity: 0.32;
@@ -893,6 +899,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes title-earth-meridian {
+
   0%,
   100% {
     transform: scaleX(1);
@@ -1198,6 +1205,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes mail-flap-open {
+
   0%,
   18%,
   100% {
@@ -1211,6 +1219,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes mail-letter-rise {
+
   0%,
   18%,
   100% {
@@ -1309,6 +1318,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes command-pulse {
+
   0%,
   100% {
     opacity: 0.35;
@@ -1322,6 +1332,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes command-dot-blink {
+
   0%,
   100% {
     opacity: 0.35;
@@ -1408,6 +1419,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes sms-phone-tilt {
+
   0%,
   100% {
     transform: rotate(0deg);
@@ -1423,6 +1435,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes sms-bubble-pop {
+
   0%,
   100% {
     opacity: 0.58;
@@ -1436,6 +1449,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes sms-line-send {
+
   0%,
   100% {
     opacity: 0.35;
@@ -1510,6 +1524,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes insta-frame-float {
+
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
@@ -1521,6 +1536,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes insta-lens-pulse {
+
   0%,
   100% {
     transform: scale(0.88);
@@ -1532,6 +1548,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes insta-flash-blink {
+
   0%,
   100% {
     opacity: 0.35;
@@ -1543,6 +1560,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes insta-spark-sweep {
+
   0%,
   100% {
     opacity: 0.22;
@@ -1610,6 +1628,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes tiktok-phone-bounce {
+
   0%,
   100% {
     transform: translateY(0);
@@ -1621,6 +1640,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes tiktok-play-pulse {
+
   0%,
   100% {
     transform: scale(0.9);
@@ -1632,6 +1652,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes tiktok-wave-ring {
+
   0%,
   100% {
     opacity: 0.3;
@@ -1703,6 +1724,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes mockup-tile-glow {
+
   0%,
   100% {
     opacity: 0.45;
@@ -1716,6 +1738,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes mockup-cursor-move {
+
   0%,
   100% {
     transform: translate(0, 0) rotate(-38deg);
@@ -1810,6 +1833,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes ads-megaphone-bounce {
+
   0%,
   100% {
     transform: translateX(0);
@@ -1821,6 +1845,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes ads-wave-pulse {
+
   0%,
   100% {
     opacity: 0.24;
@@ -1834,6 +1859,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes ads-spark-blink {
+
   0%,
   100% {
     opacity: 0.35;
@@ -1913,6 +1939,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes berberine-bottle-float {
+
   0%,
   100% {
     transform: translateY(0);
@@ -1924,6 +1951,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes berberine-leaf-sway {
+
   0%,
   100% {
     opacity: 0.62;
@@ -1935,6 +1963,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes berberine-pulse {
+
   0%,
   100% {
     opacity: 0.2;
@@ -2011,6 +2040,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes banner-line-slide {
+
   0%,
   100% {
     opacity: 0.45;
@@ -2024,6 +2054,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes banner-badge-pop {
+
   0%,
   100% {
     transform: scale(0.82);
@@ -2424,7 +2455,7 @@ a.title-motion-icon:focus-visible {
   background: linear-gradient(135deg, rgba(231, 240, 234, 0.72), rgba(255, 255, 255, 0.86));
 }
 
-.marketing-master-strip > div:first-child {
+.marketing-master-strip>div:first-child {
   min-width: 0;
   flex: 1 1 420px;
 }
@@ -2605,6 +2636,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes calendarFrontFloat {
+
   0%,
   100% {
     transform: translateY(0) rotate(2deg);
@@ -2616,6 +2648,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes calendarBackFloat {
+
   0%,
   100% {
     transform: translateY(0) rotate(-8deg);
@@ -2627,6 +2660,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes calendarCellPulse {
+
   0%,
   100% {
     transform: scale(1);
@@ -2638,6 +2672,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes calendarMarkerHop {
+
   0%,
   100% {
     transform: translate(0, 0);
@@ -2649,6 +2684,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes calendarOrbitOne {
+
   0%,
   100% {
     transform: translate(0, 0);
@@ -2660,6 +2696,7 @@ a.title-motion-icon:focus-visible {
 }
 
 @keyframes calendarOrbitTwo {
+
   0%,
   100% {
     transform: translate(0, 0);
@@ -3059,7 +3096,7 @@ a.title-motion-icon:focus-visible {
   line-height: 1.45;
 }
 
-.research-progress-header > span {
+.research-progress-header>span {
   flex: 0 0 auto;
   font-weight: 800;
 }
@@ -3226,7 +3263,7 @@ a.title-motion-icon:focus-visible {
   line-height: 1.45;
 }
 
-.analysis-card li + li {
+.analysis-card li+li {
   margin-top: 6px;
 }
 
