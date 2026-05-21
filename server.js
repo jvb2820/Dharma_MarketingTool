@@ -3,12 +3,12 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import serverlessChromium from '@sparticuz/chromium'
-import { chromium as playwrightChromium } from 'playwright-core'
+import { chromium as playwrightChromium } from 'playwright'
 
 const companies = ['lemme', 'gruns', 'bloomsups', 'obvi']
 const country = 'US'
 const env = { ...loadEnv(), ...process.env }
-const port = Number(env.API_PORT || 8787)
+const port = Number(env.PORT || env.API_PORT || 8787)
 const isVercel = Boolean(env.VERCEL)
 const vercelRequestBudgetMs = 52000
 
@@ -35,7 +35,7 @@ function loadEnv() {
 export function sendJson(response, status, body) {
   response.writeHead(status, {
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json',
   })
@@ -651,6 +651,14 @@ export function handleAdsResearchRequest(request, response) {
 
 export function handleRequest(request, response) {
   const pathname = request.url ? new URL(request.url, 'http://localhost').pathname : ''
+
+  if (request.method === 'GET' && (pathname === '/' || pathname === '/api/health')) {
+    sendJson(response, 200, {
+      ok: true,
+      service: 'Dharma ads research API',
+    })
+    return
+  }
 
   if (pathname === '/api/ads/research') {
     handleAdsResearchRequest(request, response)

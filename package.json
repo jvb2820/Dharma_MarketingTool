@@ -12,12 +12,13 @@
     "dev:vite": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "render:build": "npm install && npx playwright install --with-deps chromium",
+    "render:start": "npm run api"
   },
   "dependencies": {
     "@sparticuz/chromium": "^148.0.0",
     "playwright": "^1.60.0",
-    "playwright-core": "^1.60.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.0"

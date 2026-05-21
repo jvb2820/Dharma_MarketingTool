@@ -133,6 +133,8 @@ type StructuredAnalysis = {
 const dayTypes = ['Normal day', "Mother's Day", "Valentine's Day", 'Holiday', 'Sale event']
 const productOptions = ['Berberine Plus', 'GLP-1 Personalized Injections']
 const approvalOptions = ['Pending Approval', 'Approved', 'Not Approved']
+const adsApiBaseUrl = (import.meta.env.VITE_ADS_API_URL || '').replace(/\/+$/, '')
+const adsResearchUrl = `${adsApiBaseUrl}/api/ads/research`
 const researchProgressStages = [
   {
     detail: 'Opening the first Meta Ads Library search.',
@@ -1938,7 +1940,7 @@ function AdsResearchDashboard() {
     setElapsedSeconds(0)
 
     try {
-      const response = await fetch('/api/ads/research', {
+      const response = await fetch(adsResearchUrl, {
         body: JSON.stringify({
           brandContext: {
             audience: 'wellness supplement shoppers',
