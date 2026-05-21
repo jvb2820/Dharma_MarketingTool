@@ -5426,10 +5426,11 @@ function MarketingLogin() {
     <main className="login-shell">
       <section className="login-panel" aria-labelledby="login-title">
         <div className="login-brand-row">
-          <span className="login-mallet-logo" aria-hidden="true">
-            <span className="mallet-head mallet-head-top" />
-            <span className="mallet-head mallet-head-bottom" />
-            <span className="mallet-handle" />
+          <span className="login-bulb-logo" aria-hidden="true">
+            <span className="bulb-glow glow-up" />
+            <span className="bulb-glow glow-down" />
+            <span className="bulb-dome" />
+            <span className="bulb-base" />
           </span>
           <div>
             <h1 id="login-title">
