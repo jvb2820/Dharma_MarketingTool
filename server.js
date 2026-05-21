@@ -2,12 +2,14 @@ import { createServer } from 'node:http'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
+import serverlessChromium from '@sparticuz/chromium'
+import { chromium as playwrightChromium } from 'playwright'
 
 const companies = ['lemme', 'gruns', 'bloomsups', 'obvi']
 const country = 'US'
 const env = { ...loadEnv(), ...process.env }
 const port = Number(env.API_PORT || 8787)
+const isVercel = Boolean(env.VERCEL)
 
 function loadEnv() {
   const files = ['.env.local', '.env']
@@ -200,6 +202,18 @@ async function captureCompanyPage(browser, company) {
   } finally {
     await page.close().catch(() => undefined)
   }
+}
+
+async function launchBrowser() {
+  if (!isVercel) {
+    return playwrightChromium.launch({ headless: true })
+  }
+
+  return playwrightChromium.launch({
+    args: serverlessChromium.args,
+    executablePath: await serverlessChromium.executablePath(),
+    headless: serverlessChromium.headless,
+  })
 }
 
 function makeClaudeContent(captures, brandContext) {
@@ -404,7 +418,7 @@ export async function handleResearch(request, response) {
   let browser
 
   try {
-    browser = await chromium.launch({ headless: true })
+    browser = await launchBrowser()
     const captures = []
 
     for (const company of companies) {
