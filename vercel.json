@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/ads/research.js": {
+      "maxDuration": 60
+    }
+  }
+}
