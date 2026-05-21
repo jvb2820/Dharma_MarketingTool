@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const companies = ['lemme', 'gruns', 'bloomsups', 'obvi']
@@ -28,7 +29,7 @@ function loadEnv() {
   return values
 }
 
-function sendJson(response, status, body) {
+export function sendJson(response, status, body) {
   response.writeHead(status, {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -39,6 +40,30 @@ function sendJson(response, status, body) {
 }
 
 function readBody(request) {
+  if (request.body !== undefined) {
+    if (!request.body) return Promise.resolve({})
+
+    if (typeof request.body === 'string') {
+      try {
+        return Promise.resolve(JSON.parse(request.body))
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }
+
+    if (Buffer.isBuffer(request.body)) {
+      try {
+        return Promise.resolve(JSON.parse(request.body.toString('utf8')))
+      } catch (error) {
+        return Promise.reject(error)
+      }
+    }
+
+    if (typeof request.body === 'object') {
+      return Promise.resolve(request.body)
+    }
+  }
+
   return new Promise((resolve, reject) => {
     let body = ''
 
@@ -347,7 +372,7 @@ async function analyzeWithClaude(captures, brandContext) {
   }
 }
 
-async function handleResearch(request, response) {
+export async function handleResearch(request, response) {
   let body
 
   try {
@@ -406,18 +431,37 @@ async function handleResearch(request, response) {
   }
 }
 
-createServer((request, response) => {
+export function handleAdsResearchRequest(request, response) {
   if (request.method === 'OPTIONS') {
     sendJson(response, 204, {})
     return
   }
 
-  if (request.method === 'POST' && request.url === '/api/ads/research') {
+  if (request.method === 'POST') {
     handleResearch(request, response)
     return
   }
 
+  sendJson(response, 405, { error: 'Method not allowed.' })
+}
+
+export function handleRequest(request, response) {
+  const pathname = request.url ? new URL(request.url, 'http://localhost').pathname : ''
+
+  if (pathname === '/api/ads/research') {
+    handleAdsResearchRequest(request, response)
+    return
+  }
+
   sendJson(response, 404, { error: 'Not found.' })
-}).listen(port, () => {
-  console.log(`Ads research API running on http://localhost:${port}`)
-})
+}
+
+function isMainModule() {
+  return process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+}
+
+if (isMainModule()) {
+  createServer(handleRequest).listen(port, () => {
+    console.log(`Ads research API running on http://localhost:${port}`)
+  })
+}
