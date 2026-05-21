@@ -36,20 +36,72 @@
   justify-content: center;
 }
 
-.login-logo {
-  display: grid;
-  place-items: center;
+.login-mallet-logo {
+  position: relative;
+  display: inline-block;
   width: 46px;
   height: 46px;
+  flex: 0 0 46px;
   border-radius: 50%;
   background: linear-gradient(145deg, #f8dd71, #d7af25);
   box-shadow: 0 12px 30px rgba(141, 111, 21, 0.22);
 }
 
-.login-logo img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
+.mallet-head,
+.mallet-handle {
+  position: absolute;
+  display: block;
+  background: var(--green);
+}
+
+.mallet-head {
+  left: 12px;
+  width: 22px;
+  height: 8px;
+  border-radius: 999px;
+  transform-origin: center right;
+}
+
+.mallet-head-top {
+  top: 14px;
+  animation: mallet-open-top 1.8s ease-in-out infinite;
+}
+
+.mallet-head-bottom {
+  top: 24px;
+  animation: mallet-open-bottom 1.8s ease-in-out infinite;
+}
+
+.mallet-handle {
+  left: 21px;
+  top: 19px;
+  width: 5px;
+  height: 17px;
+  border-radius: 999px;
+  background: #fffdf2;
+  box-shadow: 0 0 0 2px rgba(20, 87, 55, 0.16);
+}
+
+@keyframes mallet-open-top {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+
+  48% {
+    transform: rotate(-22deg) translateY(-2px);
+  }
+}
+
+@keyframes mallet-open-bottom {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+
+  48% {
+    transform: rotate(22deg) translateY(2px);
+  }
 }
 
 .login-brand-row h1 {
