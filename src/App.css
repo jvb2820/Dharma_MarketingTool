@@ -25,6 +25,7 @@
 .login-panel {
   width: min(100%, 420px);
   justify-self: end;
+  transform: translateX(-34px);
 }
 
 .login-brand-row {
@@ -3596,6 +3597,7 @@ a.title-motion-icon:focus-visible {
   .login-panel {
     justify-self: center;
     padding-top: 38px;
+    transform: none;
   }
 
   .login-visual {
