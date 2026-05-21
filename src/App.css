@@ -42,9 +42,7 @@
   width: 58px;
   height: 58px;
   flex: 0 0 58px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 16px 36px rgba(141, 111, 21, 0.16);
+  filter: drop-shadow(0 14px 22px rgba(141, 111, 21, 0.16));
 }
 
 .bulb-ray,
