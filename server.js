@@ -17,6 +17,9 @@ const languageSettings = {
     'Write the final JSON string values in English. If the captured Meta page text is in Spanish or Portuguese, you may use that language instead. Do not use any other language.',
   locale: 'en_US',
 }
+const adTextSignalPattern =
+  /Sponsored|Library ID|Started running|Shop Now|See ad details|This ad has multiple versions/i
+const cyrillicPattern = /[\u0400-\u04ff]/
 
 function loadEnv() {
   const files = ['.env.local', '.env']
@@ -113,6 +116,53 @@ function metaLibraryUrl(company) {
   return `https://www.facebook.com/ads/library/?${params.toString()}`
 }
 
+function isMetaChromeLine(line) {
+  return [
+    /^Meta$/i,
+    /^Ad Library$/i,
+    /^Ad Library Report$/i,
+    /^Ad Library API$/i,
+    /^Branded Content$/i,
+    /^United States$/i,
+    /^All ads$/i,
+    /^Search by keyword or advertiser$/i,
+    /^Filters$/i,
+    /^Sort by$/i,
+    /^Save search$/i,
+    /^Saved searches$/i,
+    /^Active status:/i,
+    /^All active ads$/i,
+  ].some((pattern) => pattern.test(line.trim()))
+}
+
+function extractRelevantMetaText(rawText) {
+  const lines = rawText
+    .replace(/\s+\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const uniqueLines = []
+  const seen = new Set()
+
+  for (const line of lines) {
+    if (seen.has(line)) continue
+    seen.add(line)
+    uniqueLines.push(line)
+  }
+
+  const acceptedLanguageLines = uniqueLines.filter((line) => !cyrillicPattern.test(line))
+  const firstAdSignalIndex = acceptedLanguageLines.findIndex((line) =>
+    adTextSignalPattern.test(line),
+  )
+  const candidateLines =
+    firstAdSignalIndex >= 0
+      ? acceptedLanguageLines.slice(firstAdSignalIndex)
+      : acceptedLanguageLines
+  const relevantLines = candidateLines.filter((line) => !isMetaChromeLine(line))
+
+  return relevantLines.join('\n').trim()
+}
+
 function extractPdfStrings(rawText) {
   return [...rawText.matchAll(/\(([^()]*)\)\s*Tj/g)]
     .map((match) => match[1])
@@ -170,6 +220,7 @@ async function captureCompanyPage(browser, company) {
         'Accept-Language': languageSettings.acceptLanguage,
       },
       locale: 'en-US',
+      timezoneId: 'America/New_York',
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       viewport: {
@@ -178,6 +229,10 @@ async function captureCompanyPage(browser, company) {
       },
     })
     const page = await context.newPage()
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'language', { get: () => 'en-US' })
+      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en', 'es', 'pt'] })
+    })
 
     await page.goto(sourceUrl, {
       timeout: isVercel ? 25000 : 45000,
@@ -188,10 +243,22 @@ async function captureCompanyPage(browser, company) {
       () => undefined,
     )
     await page.waitForTimeout(isVercel ? 2500 : 5000)
-    await page.mouse.wheel(0, 700)
-    await page.waitForTimeout(isVercel ? 1200 : 2500)
+    await page
+      .waitForFunction((patternSource) => {
+        const text = document.body?.innerText || ''
+        return new RegExp(patternSource, 'i').test(text)
+      }, adTextSignalPattern.source, { timeout: isVercel ? 10000 : 25000 })
+      .catch(() => undefined)
 
-    const visibleText = await page.locator('body').innerText({ timeout: isVercel ? 5000 : 10000 })
+    for (const scrollDistance of [700, 900, 1100]) {
+      await page.mouse.wheel(0, scrollDistance)
+      await page.waitForTimeout(isVercel ? 800 : 1500)
+    }
+
+    const rawVisibleText = await page
+      .locator('body')
+      .innerText({ timeout: isVercel ? 5000 : 10000 })
+    const relevantText = extractRelevantMetaText(rawVisibleText)
     let screenshotBase64 = ''
 
     if (!isVercel || env.CAPTURE_AD_SCREENSHOTS === 'true') {
@@ -205,10 +272,12 @@ async function captureCompanyPage(browser, company) {
 
     return {
       company,
-      error: null,
+      error: relevantText
+        ? null
+        : 'Meta loaded, but no English, Spanish, or Portuguese ad-card text was captured.',
       sourceUrl,
       status: 'captured',
-      visibleText: visibleText.replace(/\s+\n/g, '\n').slice(0, isVercel ? 4000 : 8000),
+      visibleText: relevantText.slice(0, isVercel ? 4000 : 8000),
       screenshotBase64,
     }
   } catch (error) {
@@ -274,6 +343,7 @@ async function launchBrowser() {
       '--disable-dev-shm-usage',
       '--disable-gpu',
       '--hide-scrollbars',
+      '--lang=en-US',
       '--mute-audio',
     ],
     executablePath: await serverlessChromium.executablePath(),
@@ -390,20 +460,10 @@ function parseClaudeJson(report) {
   }
 }
 
-function firstCapturedText(captures) {
-  return captures.find((capture) => capture.visibleText)?.visibleText || ''
-}
-
 function buildFallbackAnalysis(captures, brandContext, note) {
   const product = brandContext.campaignContext?.selectedProduct || brandContext.product || 'the selected product'
   const eventName = brandContext.campaignContext?.eventName?.trim()
   const dayType = brandContext.campaignContext?.dayType || 'Normal day'
-  const capturedText = firstCapturedText(captures)
-  const visibleSnippet = capturedText
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 28)
-    .join(' ')
 
   return {
     campaignAngle: {
@@ -414,33 +474,41 @@ function buildFallbackAnalysis(captures, brandContext, note) {
       offerAngle:
         'Lead with a clear routine benefit, then support it with product education and a low-friction CTA.',
     },
-    competitors: captures.map((capture) => ({
-      company: capture.company,
-      connectionAssessment:
-        capture.status === 'captured'
-          ? 'A public Meta Ads Library page was captured for directional review.'
-          : capture.error || 'This page was not captured in the deployed runtime.',
-      designAnalysis:
-        capture.status === 'captured'
-          ? 'Use the visible page structure and ad library wording as a high-level reference; screenshots were skipped on Vercel for speed.'
-          : 'No design read available from this deployment run.',
-      longestVisibleAd:
-        capture.status === 'captured'
-          ? 'Longest visible ad not clear from the text-only deployment capture.'
-          : 'Not captured',
-      visibleWords:
-        capture.status === 'captured' && visibleSnippet
-          ? [visibleSnippet]
-          : ['No visible ad wording captured.'],
-      whatToBorrow:
-        capture.status === 'captured'
-          ? ['Simple benefit framing', 'Clear product naming', 'Direct path to learn more']
-          : ['Retry locally or move capture to a longer-running backend'],
-      whatToImprove:
-        capture.status === 'captured'
-          ? ['Make the recommendation more product-specific', 'Avoid copying competitor wording']
-          : ['Capture this competitor before using it as inspiration'],
-    })),
+    competitors: captures.map((capture) => {
+      const visibleSnippet = capture.visibleText
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 36)
+        .join(' ')
+
+      return {
+        company: capture.company,
+        connectionAssessment:
+          capture.status === 'captured' && capture.visibleText
+            ? 'A public Meta Ads Library page was captured for directional review.'
+            : capture.error || 'This page was not captured in the deployed runtime.',
+        designAnalysis:
+          capture.status === 'captured' && capture.visibleText
+            ? 'Use the captured ad-card text and screenshot as a directional reference for creative structure.'
+            : 'No design read available from this deployment run.',
+        longestVisibleAd:
+          capture.status === 'captured' && capture.visibleText
+            ? 'Longest visible ad not clear from the text-only fallback.'
+            : 'Not captured',
+        visibleWords:
+          capture.status === 'captured' && visibleSnippet
+            ? [visibleSnippet]
+            : ['No English, Spanish, or Portuguese ad wording captured.'],
+        whatToBorrow:
+          capture.status === 'captured' && capture.visibleText
+            ? ['Simple benefit framing', 'Clear product naming', 'Direct path to learn more']
+            : ['Retry after Meta fully loads the ad cards'],
+        whatToImprove:
+          capture.status === 'captured' && capture.visibleText
+            ? ['Make the recommendation more product-specific', 'Avoid copying competitor wording']
+            : ['Capture this competitor before using it as inspiration'],
+      }
+    }),
     complianceNotes: [
       'Avoid guaranteed weight-loss or medical outcome claims.',
       'Do not copy competitor brand assets, layouts, or exact wording.',
