@@ -5515,16 +5515,33 @@ function MarketingLogin() {
         <div className="login-target" aria-hidden="true">
           <span />
         </div>
-        <div className="login-chart" aria-hidden="true">
-          <span className="bar short green" />
-          <span className="bar mid light" />
-          <span className="bar small green" />
-          <span className="bar tall light" />
-          <span className="bar mid green" />
-          <span className="bar high light" />
-          <span className="bar tallest green" />
-          <span className="bar high light" />
-          <span className="bar tall green" />
+        <div className="login-magazine" aria-hidden="true">
+          <span className="magazine-shadow" />
+          <span className="magazine-page page-left">
+            <i className="magazine-title-line" />
+            <i />
+            <i />
+            <i />
+            <b />
+          </span>
+          <span className="magazine-page page-right">
+            <i className="magazine-title-line" />
+            <i />
+            <i />
+            <i />
+            <b />
+          </span>
+          <span className="magazine-page flipping-page flip-one">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="magazine-page flipping-page flip-two">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="magazine-spine" />
         </div>
       </section>
     </main>

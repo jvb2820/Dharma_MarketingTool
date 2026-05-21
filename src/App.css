@@ -267,87 +267,156 @@
     inset 0 0 0 7px var(--gold);
 }
 
-.login-chart {
+.login-magazine {
   position: relative;
   z-index: 2;
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  gap: 14px;
-  min-height: 190px;
   width: min(430px, 72%);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.68);
+  height: 210px;
+  perspective: 900px;
+  transform-style: preserve-3d;
 }
 
-.login-chart .bar {
-  width: 25px;
-  border-radius: 7px 7px 0 0;
-  transform-origin: bottom;
-  animation: login-bar-lift 3.8s ease-in-out infinite;
+.magazine-shadow {
+  position: absolute;
+  right: 22px;
+  bottom: 10px;
+  left: 22px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(99, 73, 11, 0.2);
+  filter: blur(12px);
 }
 
-.login-chart .green {
-  background: #287346;
+.magazine-page {
+  position: absolute;
+  top: 18px;
+  bottom: 24px;
+  width: calc(50% - 6px);
+  border: 1px solid rgba(20, 87, 55, 0.08);
+  background: #fffdf3;
+  box-shadow: 0 18px 34px rgba(105, 79, 14, 0.18);
 }
 
-.login-chart .light {
-  background: #fffdf2;
+.magazine-page.page-left {
+  left: 0;
+  border-radius: 18px 6px 10px 18px;
+  transform: rotateY(9deg) rotateZ(-2deg);
+  transform-origin: right center;
 }
 
-.login-chart .small {
-  height: 42px;
+.magazine-page.page-right {
+  right: 0;
+  border-radius: 6px 18px 18px 10px;
+  transform: rotateY(-9deg) rotateZ(2deg);
+  transform-origin: left center;
 }
 
-.login-chart .short {
-  height: 56px;
+.magazine-page i,
+.magazine-page b {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
 }
 
-.login-chart .mid {
-  height: 92px;
+.magazine-page i {
+  left: 22px;
+  right: 22px;
+  height: 9px;
+  background: rgba(20, 87, 55, 0.16);
 }
 
-.login-chart .tall {
-  height: 126px;
+.magazine-page i:nth-of-type(1) {
+  top: 28px;
 }
 
-.login-chart .high {
-  height: 162px;
+.magazine-page i:nth-of-type(2) {
+  top: 58px;
 }
 
-.login-chart .tallest {
-  height: 192px;
+.magazine-page i:nth-of-type(3) {
+  top: 82px;
+  right: 58px;
 }
 
-.login-chart .bar:nth-child(2) {
-  animation-delay: 0.15s;
+.magazine-page i:nth-of-type(4) {
+  top: 106px;
 }
 
-.login-chart .bar:nth-child(3) {
-  animation-delay: 0.3s;
+.magazine-page .magazine-title-line {
+  height: 18px;
+  background: linear-gradient(90deg, var(--green), #5f9d72);
 }
 
-.login-chart .bar:nth-child(4) {
-  animation-delay: 0.45s;
+.magazine-page b {
+  right: 24px;
+  bottom: 24px;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(218, 176, 39, 0.78), rgba(246, 226, 141, 0.8)),
+    var(--gold);
 }
 
-.login-chart .bar:nth-child(5) {
-  animation-delay: 0.6s;
+.magazine-spine {
+  position: absolute;
+  top: 18px;
+  bottom: 24px;
+  left: calc(50% - 3px);
+  width: 6px;
+  border-radius: 999px;
+  background: rgba(20, 87, 55, 0.24);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.28);
 }
 
-.login-chart .bar:nth-child(6) {
-  animation-delay: 0.75s;
+.flipping-page {
+  left: calc(50% - 4px);
+  width: calc(50% - 8px);
+  border-radius: 6px 18px 18px 10px;
+  transform-origin: left center;
+  animation: magazine-page-flip 4.8s ease-in-out infinite;
+  backface-visibility: hidden;
 }
 
-.login-chart .bar:nth-child(7) {
-  animation-delay: 0.9s;
+.flipping-page.flip-two {
+  animation-delay: 2.4s;
+  background: #fbf2d7;
 }
 
-.login-chart .bar:nth-child(8) {
-  animation-delay: 1.05s;
+.flipping-page i:nth-of-type(1) {
+  top: 34px;
 }
 
-.login-chart .bar:nth-child(9) {
-  animation-delay: 1.2s;
+.flipping-page i:nth-of-type(2) {
+  top: 66px;
+  right: 48px;
+}
+
+.flipping-page i:nth-of-type(3) {
+  top: 98px;
+}
+
+@keyframes magazine-page-flip {
+  0%,
+  22% {
+    opacity: 0;
+    transform: rotateY(0deg);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  62% {
+    opacity: 1;
+    transform: rotateY(-174deg);
+  }
+
+  72%,
+  100% {
+    opacity: 0;
+    transform: rotateY(-178deg);
+  }
 }
 
 .login-calendar-stack {
@@ -512,17 +581,6 @@
 
   50% {
     transform: translate3d(-10px, -12px, 0) rotate(-3deg);
-  }
-}
-
-@keyframes login-bar-lift {
-  0%,
-  100% {
-    transform: scaleY(1);
-  }
-
-  45% {
-    transform: scaleY(1.08);
   }
 }
 
@@ -3612,38 +3670,21 @@ a.title-motion-icon:focus-visible {
     transform-origin: bottom right;
   }
 
-  .login-chart {
-    width: min(360px, 82%);
-    min-height: 150px;
-    gap: 9px;
+  .login-magazine {
+    width: min(360px, 84%);
+    height: 164px;
   }
 
-  .login-chart .bar {
-    width: 18px;
+  .magazine-page i {
+    left: 14px;
+    right: 14px;
   }
 
-  .login-chart .tallest {
-    height: 150px;
-  }
-
-  .login-chart .high {
-    height: 124px;
-  }
-
-  .login-chart .tall {
-    height: 96px;
-  }
-
-  .login-chart .mid {
-    height: 74px;
-  }
-
-  .login-chart .short {
-    height: 48px;
-  }
-
-  .login-chart .small {
-    height: 34px;
+  .magazine-page b {
+    width: 42px;
+    height: 42px;
+    right: 16px;
+    bottom: 18px;
   }
 
   .app-shell {
