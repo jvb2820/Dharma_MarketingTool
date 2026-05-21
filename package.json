@@ -13,7 +13,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "render:build": "npm install && npx playwright install chromium",
+    "render:build": "npm install && npx playwright install chromium --only-shell",
     "render:start": "npm run api"
   },
   "dependencies": {
