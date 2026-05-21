@@ -378,6 +378,90 @@ function parseClaudeJson(report) {
   }
 }
 
+function firstCapturedText(captures) {
+  return captures.find((capture) => capture.visibleText)?.visibleText || ''
+}
+
+function buildFallbackAnalysis(captures, brandContext, note) {
+  const product = brandContext.campaignContext?.selectedProduct || brandContext.product || 'the selected product'
+  const eventName = brandContext.campaignContext?.eventName?.trim()
+  const dayType = brandContext.campaignContext?.dayType || 'Normal day'
+  const capturedText = firstCapturedText(captures)
+  const visibleSnippet = capturedText
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 28)
+    .join(' ')
+
+  return {
+    campaignAngle: {
+      audienceFit:
+        'Use the competitor scan as directional inspiration for wellness shoppers, not as copy to duplicate.',
+      dayContext: eventName ? `${dayType}: ${eventName}` : dayType,
+      hook: `Make ${product} feel simple, credible, and easy to start today.`,
+      offerAngle:
+        'Lead with a clear routine benefit, then support it with product education and a low-friction CTA.',
+    },
+    competitors: captures.map((capture) => ({
+      company: capture.company,
+      connectionAssessment:
+        capture.status === 'captured'
+          ? 'A public Meta Ads Library page was captured for directional review.'
+          : capture.error || 'This page was not captured in the deployed runtime.',
+      designAnalysis:
+        capture.status === 'captured'
+          ? 'Use the visible page structure and ad library wording as a high-level reference; screenshots were skipped on Vercel for speed.'
+          : 'No design read available from this deployment run.',
+      longestVisibleAd:
+        capture.status === 'captured'
+          ? 'Longest visible ad not clear from the text-only deployment capture.'
+          : 'Not captured',
+      visibleWords:
+        capture.status === 'captured' && visibleSnippet
+          ? [visibleSnippet]
+          : ['No visible ad wording captured.'],
+      whatToBorrow:
+        capture.status === 'captured'
+          ? ['Simple benefit framing', 'Clear product naming', 'Direct path to learn more']
+          : ['Retry locally or move capture to a longer-running backend'],
+      whatToImprove:
+        capture.status === 'captured'
+          ? ['Make the recommendation more product-specific', 'Avoid copying competitor wording']
+          : ['Capture this competitor before using it as inspiration'],
+    })),
+    complianceNotes: [
+      'Avoid guaranteed weight-loss or medical outcome claims.',
+      'Do not copy competitor brand assets, layouts, or exact wording.',
+      note || 'Fallback analysis was generated because Claude did not return formatted JSON.',
+    ],
+    nextTests: [
+      'Test a product education angle against a simple benefit angle.',
+      'Test UGC-style copy against a cleaner clinical-style ad.',
+      'Run the full screenshot workflow on a longer-running backend for richer creative reads.',
+    ],
+    recommendedDescription: {
+      cta: 'Learn More',
+      description: 'A simple daily wellness support option from Dharma.',
+      headline: `${product} support, made simple`,
+      primaryText: `Support your ${product} campaign with a clear, credible ad that explains the routine benefit without overpromising results.`,
+    },
+    recommendedDesign: {
+      colorAndStyle:
+        'Use clean clinic-forward styling with warm product accents, high contrast text, and restrained wellness imagery.',
+      concept: `${product} routine reset`,
+      layout:
+        'Lead with the product and a short benefit statement, then add one proof or education point and a clear CTA.',
+      shotList: [
+        'Product or clinic-safe hero shot',
+        'Simple routine moment',
+        'Close-up of packaging or service detail',
+      ],
+      visualDirection:
+        'Original Dharma-branded creative inspired by competitor clarity, not competitor assets.',
+    },
+  }
+}
+
 async function analyzeWithClaude(captures, brandContext) {
   const key = env.ANTHROPIC_API_KEY
 
@@ -427,9 +511,9 @@ async function analyzeWithClaude(captures, brandContext) {
         const parsed = parseClaudeJson(report)
 
         return {
-          error: null,
+          error: parsed ? null : 'Claude returned unformatted text, so a structured fallback was generated.',
           model,
-          parsed,
+          parsed: parsed || buildFallbackAnalysis(captures, brandContext),
           report,
         }
       }
@@ -450,7 +534,7 @@ async function analyzeWithClaude(captures, brandContext) {
   return {
     error: lastError,
     model: null,
-    parsed: null,
+    parsed: buildFallbackAnalysis(captures, brandContext, lastError),
     report: null,
   }
 }
@@ -488,7 +572,7 @@ export async function handleResearch(request, response) {
   const startedAt = Date.now()
 
   try {
-    browser = await launchBrowser()
+    browser = isVercel ? null : await launchBrowser()
     const captures = []
 
     for (const company of companies) {
