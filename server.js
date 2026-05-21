@@ -3,7 +3,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import serverlessChromium from '@sparticuz/chromium'
-import { chromium as playwrightChromium } from 'playwright'
+import { chromium as playwrightChromium } from 'playwright-core'
 
 const companies = ['lemme', 'gruns', 'bloomsups', 'obvi']
 const country = 'US'
@@ -153,24 +153,31 @@ async function dismissCookieDialog(page) {
 }
 
 async function captureCompanyPage(browser, company) {
-  const page = await browser.newPage({
-    viewport: {
-      height: 2200,
-      width: 1365,
-    },
-  })
   const sourceUrl = metaLibraryUrl(company)
+  let context
 
   try {
+    context = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      viewport: {
+        height: 1600,
+        width: 1365,
+      },
+    })
+    const page = await context.newPage()
+
     await page.goto(sourceUrl, {
-      timeout: 45000,
+      timeout: isVercel ? 25000 : 45000,
       waitUntil: 'domcontentloaded',
     })
     await dismissCookieDialog(page)
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined)
-    await page.waitForTimeout(5000)
-    await page.mouse.wheel(0, 900)
-    await page.waitForTimeout(2500)
+    await page.waitForLoadState('networkidle', { timeout: isVercel ? 6000 : 15000 }).catch(
+      () => undefined,
+    )
+    await page.waitForTimeout(isVercel ? 2500 : 5000)
+    await page.mouse.wheel(0, 700)
+    await page.waitForTimeout(isVercel ? 1200 : 2500)
 
     const visibleText = await page.locator('body').innerText({ timeout: 10000 })
     const screenshot = await page.screenshot({
@@ -200,7 +207,38 @@ async function captureCompanyPage(browser, company) {
       screenshotBase64: '',
     }
   } finally {
-    await page.close().catch(() => undefined)
+    await context?.close().catch(() => undefined)
+  }
+}
+
+function failedCapture(company, error) {
+  return {
+    company,
+    error:
+      error instanceof Error
+        ? error.message
+        : 'Could not capture the public Meta Ads Library page.',
+    sourceUrl: metaLibraryUrl(company),
+    status: 'failed',
+    visibleText: '',
+    screenshotBase64: '',
+  }
+}
+
+async function captureCompany(company, sharedBrowser) {
+  if (sharedBrowser) {
+    return captureCompanyPage(sharedBrowser, company)
+  }
+
+  let browser
+
+  try {
+    browser = await launchBrowser()
+    return await captureCompanyPage(browser, company)
+  } catch (error) {
+    return failedCapture(company, error)
+  } finally {
+    await browser?.close().catch(() => undefined)
   }
 }
 
@@ -209,10 +247,18 @@ async function launchBrowser() {
     return playwrightChromium.launch({ headless: true })
   }
 
+  serverlessChromium.setGraphicsMode = false
+
   return playwrightChromium.launch({
-    args: serverlessChromium.args,
+    args: [
+      ...serverlessChromium.args,
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--hide-scrollbars',
+      '--mute-audio',
+    ],
     executablePath: await serverlessChromium.executablePath(),
-    headless: serverlessChromium.headless,
+    headless: true,
   })
 }
 
@@ -418,11 +464,24 @@ export async function handleResearch(request, response) {
   let browser
 
   try {
-    browser = await launchBrowser()
+    browser = isVercel ? null : await launchBrowser()
     const captures = []
 
     for (const company of companies) {
-      captures.push(await captureCompanyPage(browser, company))
+      captures.push(await captureCompany(company, browser))
+    }
+
+    if (captures.every((capture) => capture.status === 'failed')) {
+      sendJson(response, 500, {
+        error: `Browser capture failed on Vercel: ${captures[0]?.error || 'No pages could be captured.'}`,
+        companies,
+        country,
+        results: captures.map(({ screenshotBase64, ...capture }) => ({
+          ...capture,
+          screenshotCaptured: Boolean(screenshotBase64),
+        })),
+      })
+      return
     }
 
     const analysis = await analyzeWithClaude(captures, enrichedBrandContext)
