@@ -16,9 +16,9 @@
 
 .login-shell {
   display: grid;
-  grid-template-columns: minmax(360px, 0.82fr) minmax(520px, 1fr);
+  grid-template-columns: minmax(360px, 0.9fr) minmax(500px, 0.92fr);
   align-items: center;
-  gap: clamp(42px, 7vw, 112px);
+  gap: clamp(42px, 6vw, 96px);
   padding: 24px;
 }
 
@@ -168,8 +168,10 @@
 
 .login-visual {
   position: relative;
-  min-height: calc(100svh - 48px);
-  border-radius: 34px;
+  width: min(100%, 905px);
+  min-height: min(862px, calc(100svh - 70px));
+  justify-self: end;
+  border-radius: 32px;
   display: grid;
   place-items: center;
   align-content: center;
