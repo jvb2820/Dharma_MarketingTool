@@ -10,6 +10,7 @@ const country = 'US'
 const env = { ...loadEnv(), ...process.env }
 const port = Number(env.API_PORT || 8787)
 const isVercel = Boolean(env.VERCEL)
+const vercelRequestBudgetMs = 52000
 
 function loadEnv() {
   const files = ['.env.local', '.env']
@@ -179,20 +180,25 @@ async function captureCompanyPage(browser, company) {
     await page.mouse.wheel(0, 700)
     await page.waitForTimeout(isVercel ? 1200 : 2500)
 
-    const visibleText = await page.locator('body').innerText({ timeout: 10000 })
-    const screenshot = await page.screenshot({
-      fullPage: false,
-      quality: 62,
-      type: 'jpeg',
-    })
+    const visibleText = await page.locator('body').innerText({ timeout: isVercel ? 5000 : 10000 })
+    let screenshotBase64 = ''
+
+    if (!isVercel || env.CAPTURE_AD_SCREENSHOTS === 'true') {
+      const screenshot = await page.screenshot({
+        fullPage: false,
+        quality: isVercel ? 35 : 62,
+        type: 'jpeg',
+      })
+      screenshotBase64 = screenshot.toString('base64')
+    }
 
     return {
       company,
       error: null,
       sourceUrl,
       status: 'captured',
-      visibleText: visibleText.replace(/\s+\n/g, '\n').slice(0, 8000),
-      screenshotBase64: screenshot.toString('base64'),
+      visibleText: visibleText.replace(/\s+\n/g, '\n').slice(0, isVercel ? 4000 : 8000),
+      screenshotBase64,
     }
   } catch (error) {
     return {
@@ -217,7 +223,9 @@ function failedCapture(company, error) {
     error:
       error instanceof Error
         ? error.message
-        : 'Could not capture the public Meta Ads Library page.',
+        : typeof error === 'string'
+          ? error
+          : 'Could not capture the public Meta Ads Library page.',
     sourceUrl: metaLibraryUrl(company),
     status: 'failed',
     visibleText: '',
@@ -381,47 +389,62 @@ async function analyzeWithClaude(captures, brandContext) {
   }
 
   const models = [
-    'claude-sonnet-4-6',
-    'claude-sonnet-4-5-20250929',
-    'claude-haiku-4-5-20251001',
+    'claude-3-5-haiku-20241022',
+    'claude-sonnet-4-20250514',
+    'claude-3-7-sonnet-20250219',
   ]
   let lastError = 'Claude analysis failed.'
 
   for (const model of models) {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      body: JSON.stringify({
-        max_tokens: 7000,
-        messages: [
-          {
-            content: makeClaudeContent(captures, brandContext),
-            role: 'user',
-          },
-        ],
-        model,
-      }),
-      headers: {
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'x-api-key': key,
-      },
-      method: 'POST',
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), isVercel ? 18000 : 90000)
 
-    const payload = await response.json()
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        body: JSON.stringify({
+          max_tokens: isVercel ? 2600 : 7000,
+          messages: [
+            {
+              content: makeClaudeContent(captures, brandContext),
+              role: 'user',
+            },
+          ],
+          model,
+        }),
+        headers: {
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'x-api-key': key,
+        },
+        method: 'POST',
+        signal: controller.signal,
+      })
 
-    if (response.ok) {
-      const report = payload.content?.map((block) => block.text).filter(Boolean).join('\n\n') || ''
-      const parsed = parseClaudeJson(report)
+      const payload = await response.json()
 
-      return {
-        error: null,
-        model,
-        parsed,
-        report,
+      if (response.ok) {
+        const report = payload.content?.map((block) => block.text).filter(Boolean).join('\n\n') || ''
+        const parsed = parseClaudeJson(report)
+
+        return {
+          error: null,
+          model,
+          parsed,
+          report,
+        }
       }
-    }
 
-    lastError = payload.error?.message || `Claude analysis failed with ${model}.`
+      lastError = payload.error?.message || `Claude analysis failed with ${model}.`
+    } catch (error) {
+      lastError =
+        error instanceof Error && error.name === 'AbortError'
+          ? `Claude analysis timed out with ${model}.`
+          : error instanceof Error
+            ? error.message
+            : `Claude analysis failed with ${model}.`
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   return {
@@ -462,18 +485,42 @@ export async function handleResearch(request, response) {
   }
 
   let browser
+  const startedAt = Date.now()
 
   try {
-    browser = isVercel ? null : await launchBrowser()
+    browser = await launchBrowser()
     const captures = []
 
     for (const company of companies) {
+      if (isVercel && Date.now() - startedAt > 30000) {
+        captures.push(failedCapture(company, 'Skipped to stay within the Vercel function timeout.'))
+        continue
+      }
+
       captures.push(await captureCompany(company, browser))
     }
 
     if (captures.every((capture) => capture.status === 'failed')) {
       sendJson(response, 500, {
         error: `Browser capture failed on Vercel: ${captures[0]?.error || 'No pages could be captured.'}`,
+        companies,
+        country,
+        results: captures.map(({ screenshotBase64, ...capture }) => ({
+          ...capture,
+          screenshotCaptured: Boolean(screenshotBase64),
+        })),
+      })
+      return
+    }
+
+    if (isVercel && Date.now() - startedAt > vercelRequestBudgetMs - 22000) {
+      sendJson(response, 200, {
+        analysis: {
+          error: 'Captured competitor pages, but skipped Claude analysis to avoid the Vercel function timeout. Run locally for the full screenshot-based report or move this API to a long-running backend.',
+          model: null,
+          parsed: null,
+          report: null,
+        },
         companies,
         country,
         results: captures.map(({ screenshotBase64, ...capture }) => ({
