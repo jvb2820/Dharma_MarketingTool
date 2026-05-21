@@ -182,6 +182,7 @@
 }
 
 .login-visual {
+  position: relative;
   min-height: calc(100svh - 48px);
   border-radius: 34px;
   display: grid;
@@ -191,11 +192,40 @@
   overflow: hidden;
   background:
     radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.62), transparent 23rem),
+    radial-gradient(circle at 76% 22%, rgba(20, 87, 55, 0.16), transparent 13rem),
     linear-gradient(135deg, #f9f2d8 0%, #e8ca68 58%, #d7b322 100%);
   box-shadow: inset 0 0 70px rgba(20, 87, 55, 0.1);
 }
 
+.login-visual::before,
+.login-visual::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.login-visual::before {
+  width: 360px;
+  height: 360px;
+  left: -110px;
+  bottom: -90px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  animation: login-orbit-drift 12s ease-in-out infinite;
+}
+
+.login-visual::after {
+  width: 210px;
+  height: 210px;
+  top: 54px;
+  right: 78px;
+  border: 1px dashed rgba(20, 87, 55, 0.28);
+  animation: login-slow-spin 22s linear infinite;
+}
+
 .login-visual p {
+  position: relative;
+  z-index: 2;
   margin: 0;
   color: var(--green);
   font-family: Georgia, 'Times New Roman', serif;
@@ -205,6 +235,8 @@
 }
 
 .login-visual h2 {
+  position: relative;
+  z-index: 2;
   margin: 0;
   color: #ffffff;
   font-size: clamp(48px, 5.4vw, 78px);
@@ -214,12 +246,15 @@
 }
 
 .login-target {
+  position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 78px;
   height: 78px;
   border: 4px solid #ffffff;
   border-radius: 50%;
+  animation: login-target-pulse 2.8s ease-in-out infinite;
 }
 
 .login-target span {
@@ -233,6 +268,8 @@
 }
 
 .login-chart {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: end;
   justify-content: center;
@@ -245,6 +282,8 @@
 .login-chart .bar {
   width: 25px;
   border-radius: 7px 7px 0 0;
+  transform-origin: bottom;
+  animation: login-bar-lift 3.8s ease-in-out infinite;
 }
 
 .login-chart .green {
@@ -277,6 +316,255 @@
 
 .login-chart .tallest {
   height: 192px;
+}
+
+.login-chart .bar:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.login-chart .bar:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.login-chart .bar:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+.login-chart .bar:nth-child(5) {
+  animation-delay: 0.6s;
+}
+
+.login-chart .bar:nth-child(6) {
+  animation-delay: 0.75s;
+}
+
+.login-chart .bar:nth-child(7) {
+  animation-delay: 0.9s;
+}
+
+.login-chart .bar:nth-child(8) {
+  animation-delay: 1.05s;
+}
+
+.login-chart .bar:nth-child(9) {
+  animation-delay: 1.2s;
+}
+
+.login-calendar-stack {
+  position: absolute;
+  top: clamp(42px, 8vw, 92px);
+  left: clamp(38px, 6vw, 86px);
+  z-index: 1;
+  width: 148px;
+  height: 130px;
+  animation: login-float-card 6.6s ease-in-out infinite;
+}
+
+.login-calendar-card {
+  position: absolute;
+  display: block;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 22px 42px rgba(118, 89, 13, 0.18);
+}
+
+.login-calendar-card.calendar-back {
+  inset: 22px 4px 0 24px;
+  transform: rotate(9deg);
+  opacity: 0.58;
+}
+
+.login-calendar-card.calendar-back i {
+  display: block;
+  width: 72px;
+  height: 8px;
+  margin: 14px 0 0 20px;
+  border-radius: 999px;
+  background: rgba(20, 87, 55, 0.2);
+}
+
+.login-calendar-card.calendar-front {
+  inset: 0 18px 18px 0;
+  padding: 16px;
+  transform: rotate(-4deg);
+}
+
+.calendar-rings {
+  position: absolute;
+  top: 10px;
+  left: 22px;
+  width: 42px;
+  height: 12px;
+  background:
+    radial-gradient(circle at 7px 6px, transparent 4px, var(--green) 4px 6px, transparent 6px),
+    radial-gradient(circle at 28px 6px, transparent 4px, var(--green) 4px 6px, transparent 6px);
+}
+
+.calendar-head {
+  display: block;
+  height: 18px;
+  margin: 9px 0 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--green), #4f9369);
+}
+
+.calendar-grid-mini {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.calendar-grid-mini i {
+  height: 15px;
+  border-radius: 5px;
+  background: rgba(218, 176, 39, 0.38);
+}
+
+.calendar-grid-mini i:nth-child(5),
+.calendar-grid-mini i:nth-child(8) {
+  background: var(--green);
+}
+
+.login-megaphone {
+  position: absolute;
+  right: clamp(42px, 6vw, 96px);
+  bottom: clamp(48px, 8vw, 96px);
+  z-index: 1;
+  width: 156px;
+  height: 112px;
+  animation: login-float-megaphone 5.8s ease-in-out infinite;
+}
+
+.megaphone-cone {
+  position: absolute;
+  top: 24px;
+  left: 34px;
+  width: 86px;
+  height: 54px;
+  border-radius: 12px 42px 42px 12px;
+  background: #fffdf2;
+  transform: skewX(-10deg);
+  box-shadow: inset -16px 0 0 rgba(218, 176, 39, 0.28);
+}
+
+.megaphone-cone::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 13px;
+  width: 34px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--green);
+}
+
+.megaphone-handle {
+  position: absolute;
+  left: 58px;
+  top: 70px;
+  width: 24px;
+  height: 42px;
+  border-radius: 0 0 8px 8px;
+  background: var(--green);
+  transform: rotate(-12deg);
+}
+
+.megaphone-wave {
+  position: absolute;
+  border: 3px solid rgba(255, 255, 255, 0.78);
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 0 999px 0 0;
+}
+
+.megaphone-wave.wave-a {
+  top: 24px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  animation: login-wave 2.4s ease-in-out infinite;
+}
+
+.megaphone-wave.wave-b {
+  top: 10px;
+  right: 0;
+  width: 58px;
+  height: 58px;
+  animation: login-wave 2.4s ease-in-out infinite 0.4s;
+}
+
+@keyframes login-float-card {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translate3d(8px, -16px, 0) rotate(2deg);
+  }
+}
+
+@keyframes login-float-megaphone {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(2deg);
+  }
+
+  50% {
+    transform: translate3d(-10px, -12px, 0) rotate(-3deg);
+  }
+}
+
+@keyframes login-bar-lift {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  45% {
+    transform: scaleY(1.08);
+  }
+}
+
+@keyframes login-target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.28);
+  }
+
+  50% {
+    box-shadow: 0 0 0 18px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes login-slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes login-orbit-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(18px, -12px, 0);
+  }
+}
+
+@keyframes login-wave {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 0.88;
+    transform: scale(1.04);
+  }
 }
 
 .app-shell {
@@ -3306,6 +3594,22 @@ a.title-motion-icon:focus-visible {
     min-height: 390px;
     border-radius: 22px;
     gap: 22px;
+  }
+
+  .login-calendar-stack {
+    top: 24px;
+    left: 18px;
+    width: 104px;
+    height: 94px;
+    transform: scale(0.78);
+    transform-origin: top left;
+  }
+
+  .login-megaphone {
+    right: 16px;
+    bottom: 22px;
+    transform: scale(0.72);
+    transform-origin: bottom right;
   }
 
   .login-chart {

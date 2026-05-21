@@ -5480,6 +5480,36 @@ function MarketingLogin() {
       </section>
 
       <section className="login-visual" aria-label="Marketing command center preview">
+        <div className="login-calendar-stack" aria-hidden="true">
+          <span className="login-calendar-card calendar-back">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="login-calendar-card calendar-front">
+            <span className="calendar-rings" />
+            <span className="calendar-head" />
+            <span className="calendar-grid-mini">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+          </span>
+        </div>
+
+        <div className="login-megaphone" aria-hidden="true">
+          <span className="megaphone-cone" />
+          <span className="megaphone-handle" />
+          <span className="megaphone-wave wave-a" />
+          <span className="megaphone-wave wave-b" />
+        </div>
+
         <p>Master</p>
         <h2>Your Marketing</h2>
         <div className="login-target" aria-hidden="true">
