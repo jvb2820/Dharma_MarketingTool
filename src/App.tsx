@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { createClient, type Session } from '@supabase/supabase-js'
 import './App.css'
 
 type MarketingRoute = {
@@ -669,14 +670,18 @@ const initialBannerRows: BannerRow[] = [
   },
 ]
 
-const supabaseRestUrl =
-  import.meta.env.VITE_SUPABASE_URL || 'https://nrweevesdbicfgjzvfvj.supabase.co/rest/v1'
+const supabaseProjectUrl = (
+  import.meta.env.VITE_SUPABASE_URL || 'https://nrweevesdbicfgjzvfvj.supabase.co'
+).replace(/\/rest\/v1\/?$/, '')
+const supabaseRestUrl = `${supabaseProjectUrl}/rest/v1`
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseClient = createClient(supabaseProjectUrl, supabaseAnonKey || 'missing-anon-key')
+let supabaseAccessToken = ''
 
 function supabaseHeaders(prefer?: string) {
   return {
     apikey: supabaseAnonKey,
-    Authorization: `Bearer ${supabaseAnonKey}`,
+    Authorization: `Bearer ${supabaseAccessToken || supabaseAnonKey}`,
     'Content-Type': 'application/json',
     ...(prefer ? { Prefer: prefer } : {}),
   }
@@ -5361,12 +5366,191 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
   )
 }
 
+function MarketingLogin() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [status, setStatus] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function signIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setStatus('')
+
+    if (!supabaseAnonKey) {
+      setError('Missing VITE_SUPABASE_ANON_KEY.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        throw signInError
+      }
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'Could not sign in.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function sendPasswordReset() {
+    setError('')
+    setStatus('')
+
+    if (!email) {
+      setError('Enter your email first.')
+      return
+    }
+
+    const { error: resetError } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+
+    if (resetError) {
+      setError(resetError.message)
+      return
+    }
+
+    setStatus('Password reset email sent.')
+  }
+
+  return (
+    <main className="login-shell">
+      <section className="login-panel" aria-labelledby="login-title">
+        <div className="login-brand-row">
+          <span className="login-logo">
+            <img src="/logo1.png" alt="" />
+          </span>
+          <div>
+            <h1 id="login-title">
+              Dharma <span>Marketing Tool</span>
+            </h1>
+            <p>Secure campaign workspace</p>
+          </div>
+        </div>
+
+        <form className="login-form" onSubmit={signIn}>
+          <label>
+            User / Email
+            <input
+              autoComplete="email"
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              type="email"
+              value={email}
+            />
+          </label>
+
+          <label>
+            <span className="login-label-row">
+              Password
+              <button onClick={sendPasswordReset} type="button">
+                Forgot?
+              </button>
+            </span>
+            <input
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              type="password"
+              value={password}
+            />
+          </label>
+
+          {error ? <p className="login-error">{error}</p> : null}
+          {status ? <p className="login-status">{status}</p> : null}
+
+          <button className="login-submit" disabled={isSubmitting} type="submit">
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+
+        <footer className="login-footer">
+          <strong>dharma</strong>
+          <span>Copyright Dharma Nutrition Clinic @ IT</span>
+        </footer>
+      </section>
+
+      <section className="login-visual" aria-label="Marketing command center preview">
+        <p>Master</p>
+        <h2>Your Marketing</h2>
+        <div className="login-target" aria-hidden="true">
+          <span />
+        </div>
+        <div className="login-chart" aria-hidden="true">
+          <span className="bar short green" />
+          <span className="bar mid light" />
+          <span className="bar small green" />
+          <span className="bar tall light" />
+          <span className="bar mid green" />
+          <span className="bar high light" />
+          <span className="bar tallest green" />
+          <span className="bar high light" />
+          <span className="bar tall green" />
+        </div>
+      </section>
+    </main>
+  )
+}
+
 function App() {
   const location = useLocation()
+  const [session, setSession] = useState<Session | null>(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
 
   useEffect(() => {
     window.scrollTo({ left: 0, top: 0 })
   }, [location.pathname])
+
+  useEffect(() => {
+    let isMounted = true
+
+    supabaseClient.auth.getSession().then(({ data }) => {
+      if (isMounted) {
+        supabaseAccessToken = data.session?.access_token || ''
+        setSession(data.session)
+        setIsAuthLoading(false)
+      }
+    })
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, nextSession) => {
+      supabaseAccessToken = nextSession?.access_token || ''
+      setSession(nextSession)
+      setIsAuthLoading(false)
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  async function signOut() {
+    supabaseAccessToken = ''
+    await supabaseClient.auth.signOut()
+  }
+
+  if (isAuthLoading) {
+    return (
+      <main className="auth-loading">
+        <span>Loading Marketing Tool...</span>
+      </main>
+    )
+  }
+
+  if (!session) {
+    return <MarketingLogin />
+  }
 
   return (
     <main className="app-shell">
@@ -5397,6 +5581,13 @@ function App() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="auth-actions">
+          <span>{session.user.email}</span>
+          <button onClick={signOut} type="button">
+            Sign out
+          </button>
+        </div>
       </header>
 
       <Routes>
