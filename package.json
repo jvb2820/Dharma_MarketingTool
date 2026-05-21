@@ -13,8 +13,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "render:build": "npm install && npx playwright install chromium --only-shell",
-    "render:start": "npm run api"
+    "render:build": "npm install && PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium --only-shell",
+    "render:start": "PLAYWRIGHT_BROWSERS_PATH=0 node server.js"
   },
   "dependencies": {
     "@sparticuz/chromium": "^148.0.0",
