@@ -2274,7 +2274,7 @@ function AdsResearchDashboard() {
             <p className="eyebrow">Competitor Ads</p>
             <h2 id="ads-dashboard-title">Meta Ad Inspiration Finder</h2>
             <p>
-              Opens public Meta Ads Library pages for Limmelive, Gruns, BloomSups, and
+              Opens public Meta Ads Library pages for Limmelive, Gruns, Bloom Nutrition, and
               Obvi Health, then sends visible page text and screenshots to Claude for strategy.
             </p>
           </div>
@@ -2374,7 +2374,7 @@ function AdsResearchDashboard() {
             visibleText: '',
           },
           {
-            company: 'bloomsups',
+            company: 'bloom nutrition',
             error: null,
             screenshotCaptured: false,
             sourceUrl: '',
