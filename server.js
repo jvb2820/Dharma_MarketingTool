@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import serverlessChromium from '@sparticuz/chromium'
 import { chromium as playwrightChromium } from 'playwright'
 
-const companies = ['lemme', 'gruns', 'bloomsups', 'obvi']
+const companies = ['limmelive', 'gruns', 'bloomsups', 'obvi health']
 const country = 'US'
 const env = { ...loadEnv(), ...process.env }
 const port = Number(env.PORT || env.API_PORT || 8787)

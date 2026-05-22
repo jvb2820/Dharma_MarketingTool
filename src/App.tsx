@@ -2274,8 +2274,8 @@ function AdsResearchDashboard() {
             <p className="eyebrow">Competitor Ads</p>
             <h2 id="ads-dashboard-title">Meta Ad Inspiration Finder</h2>
             <p>
-              Opens public Meta Ads Library pages for Lemme, Gruns, BloomSups, and
-              Obvi, then sends visible page text and screenshots to Claude for strategy.
+              Opens public Meta Ads Library pages for Limmelive, Gruns, BloomSups, and
+              Obvi Health, then sends visible page text and screenshots to Claude for strategy.
             </p>
           </div>
 
@@ -2358,7 +2358,7 @@ function AdsResearchDashboard() {
       <div className="competitor-grid">
         {(research?.results || [
           {
-            company: 'lemme',
+            company: 'limmelive',
             error: null,
             screenshotCaptured: false,
             sourceUrl: '',
@@ -2382,7 +2382,7 @@ function AdsResearchDashboard() {
             visibleText: '',
           },
           {
-            company: 'obvi',
+            company: 'obvi health',
             error: null,
             screenshotCaptured: false,
             sourceUrl: '',
