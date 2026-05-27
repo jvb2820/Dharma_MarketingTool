@@ -3435,15 +3435,6 @@ a.title-motion-icon:focus-visible {
   min-width: 1220px;
 }
 
-.mockup-preview {
-  width: 112px;
-  height: 144px;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 12px;
-  box-shadow: 0 10px 26px rgba(20, 87, 55, 0.12);
-  object-fit: cover;
-}
-
 .email-table th {
   position: sticky;
   top: 0;
@@ -3531,6 +3522,63 @@ a.title-motion-icon:focus-visible {
   resize: vertical;
 }
 
+.link-field {
+  display: grid;
+  gap: 7px;
+  min-width: 132px;
+}
+
+.link-field input {
+  color: #0756c7;
+  text-decoration: underline;
+}
+
+.link-field input::placeholder {
+  color: #748092;
+  text-decoration: none;
+}
+
+.link-field-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.link-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.link-field-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 28px;
+  border: 1px solid rgba(20, 87, 55, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #0756c7;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 7px 10px;
+  text-decoration: underline;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.link-field-open:hover,
+.link-field-open:focus-visible {
+  background: white;
+  box-shadow: 0 0 0 3px rgba(217, 173, 37, 0.16);
+  color: #003f9f;
+  outline: none;
+}
+
 .email-table input[type='checkbox'] {
   width: 20px;
   min-height: 20px;
@@ -3564,15 +3612,6 @@ a.title-motion-icon:focus-visible {
   inset: 0;
   cursor: pointer;
   opacity: 0;
-}
-
-.art-preview {
-  width: 104px;
-  height: 64px;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 12px;
-  box-shadow: 0 10px 26px rgba(20, 87, 55, 0.12);
-  object-fit: cover;
 }
 
 .file-name {

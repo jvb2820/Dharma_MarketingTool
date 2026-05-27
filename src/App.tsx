@@ -211,8 +211,7 @@ type EmailRow = {
   date: string
   time: string
   copyLink: string
-  artFileName: string
-  artImage: string
+  artLink: string
   subject: string
   link1: string
   link2: string
@@ -230,8 +229,7 @@ type EmailDbRow = {
   date: string
   time: string
   copy_link: string | null
-  art_file_name: string | null
-  art_image_data: string | null
+  art_link: string | null
   subject: string | null
   link_1: string | null
   link_2: string | null
@@ -333,8 +331,7 @@ type MockupRow = {
   date: string
   platform: string
   link: string
-  mockupFileName: string
-  mockupImage: string
+  mockupLink: string
   approval: string
   obs: string
 }
@@ -345,8 +342,7 @@ type MockupDbRow = {
   date: string
   platform: string | null
   link: string | null
-  mockup_file_name: string | null
-  mockup_image_data: string | null
+  mockup_link: string | null
   approval: string
   obs: string | null
 }
@@ -501,8 +497,7 @@ const initialEmailRows: EmailRow[] = [
   {
     id: 'email-1',
     approval: 'Approved',
-    artFileName: '',
-    artImage: '',
+    artLink: '',
     artReady: true,
     copyLink: 'https://trello.com/c/',
     copyReady: true,
@@ -518,8 +513,7 @@ const initialEmailRows: EmailRow[] = [
   {
     id: 'email-2',
     approval: 'Pending Approval',
-    artFileName: '',
-    artImage: '',
+    artLink: '',
     artReady: false,
     copyLink: 'https://trello.com/c/',
     copyReady: true,
@@ -589,8 +583,7 @@ const initialMockupRows: MockupRow[] = [
     approval: 'Pending Approval',
     date: 'May 04 to 15',
     link: '',
-    mockupFileName: 'May 04 to 15.png',
-    mockupImage: '',
+    mockupLink: '',
     obs: '',
     platform: 'INSTAGRAM',
   },
@@ -746,8 +739,7 @@ function toEmailRow(row: EmailDbRow): EmailRow {
   return {
     id: row.id,
     approval: normalizeApproval(row.approval),
-    artFileName: row.art_file_name || '',
-    artImage: row.art_image_data || '',
+    artLink: row.art_link || '',
     artReady: row.art_ready,
     copyLink: row.copy_link || '',
     copyReady: row.copy_ready,
@@ -769,8 +761,7 @@ function toEmailDbPayload(row: EmailRow, rowOrder: number) {
     date: row.date,
     time: row.time,
     copy_link: row.copyLink,
-    art_file_name: row.artFileName,
-    art_image_data: row.artImage,
+    art_link: row.artLink,
     subject: row.subject,
     link_1: row.link1,
     link_2: row.link2,
@@ -886,8 +877,7 @@ function toMockupRow(row: MockupDbRow): MockupRow {
     approval: normalizeApproval(row.approval),
     date: row.date,
     link: row.link || '',
-    mockupFileName: row.mockup_file_name || '',
-    mockupImage: row.mockup_image_data || '',
+    mockupLink: row.mockup_link || '',
     obs: row.obs || '',
     platform: translateLegacyEnglish(row.platform),
   }
@@ -900,8 +890,7 @@ function toMockupDbPayload(row: MockupRow, rowOrder: number) {
     date: row.date,
     platform: row.platform,
     link: row.link,
-    mockup_file_name: row.mockupFileName,
-    mockup_image_data: row.mockupImage,
+    mockup_link: row.mockupLink,
     approval: toStoredApproval(row.approval),
     obs: row.obs,
   }
@@ -1084,7 +1073,7 @@ function emailRowsToCsv(rows: EmailRow[]) {
     'Date',
     'Time',
     'Copy Link',
-    'Art File',
+    'Art Link',
     'Subject',
     'Link 1',
     'Link 2',
@@ -1100,7 +1089,7 @@ function emailRowsToCsv(rows: EmailRow[]) {
       row.date,
       row.time,
       row.copyLink,
-      row.artFileName,
+      row.artLink,
       row.subject,
       row.link1,
       row.link2,
@@ -1157,6 +1146,65 @@ async function readJsonResponse(response: Response) {
       error: text,
     }
   }
+}
+
+function getClickableUrls(value: string) {
+  const matches = value.match(/(?:https?:\/\/|www\.)[^\s,;]+/gi) || []
+
+  return [...new Set(matches.map((url) => url.replace(/[.)\]}]+$/, '')))]
+}
+
+function toClickableHref(url: string) {
+  return url.toLowerCase().startsWith('www.') ? `https://${url}` : url
+}
+
+function LinkField({
+  'aria-label': ariaLabel,
+  onChange,
+  placeholder = 'https://',
+  type = 'url',
+  value,
+}: {
+  'aria-label': string
+  onChange: (value: string) => void
+  placeholder?: string
+  type?: 'text' | 'url'
+  value: string
+}) {
+  const links = getClickableUrls(value)
+
+  return (
+    <div className="link-field">
+      <input
+        aria-label={ariaLabel}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        type={type}
+        value={value}
+      />
+      {links.length > 0 ? (
+        <div className="link-field-actions">
+          {links.map((link, index) => {
+            const href = toClickableHref(link)
+
+            return (
+              <span className="link-field-row" key={`${link}-${index}`}>
+                <a
+                  aria-label={`Open ${ariaLabel}${links.length > 1 ? ` ${index + 1}` : ''}`}
+                  className="link-field-open"
+                  href={href}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open
+                </a>
+              </span>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 function FieldValue({ label, value }: { label: string; value?: string }) {
@@ -1379,8 +1427,7 @@ function EmailDashboard() {
     const nextRow: EmailRow = {
       id: crypto.randomUUID(),
         approval: 'Pending Approval',
-        artFileName: '',
-        artImage: '',
+        artLink: '',
         artReady: false,
         copyLink: '',
         copyReady: false,
@@ -1436,29 +1483,6 @@ function EmailDashboard() {
     } catch (error) {
       setEmailError(error instanceof Error ? error.message : 'Could not delete row.')
     }
-  }
-
-  function handleImageUpload(id: string, file?: File) {
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      updateRow(id, {
-        artFileName: file.name,
-        artImage: String(reader.result || ''),
-        artReady: true,
-      })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  function downloadImage(row: EmailRow) {
-    if (!row.artImage) return
-
-    const link = document.createElement('a')
-    link.href = row.artImage
-    link.download = row.artFileName || `${row.id}-art.png`
-    link.click()
   }
 
   function exportCsv() {
@@ -1559,40 +1583,20 @@ function EmailDashboard() {
                   />
                 </td>
                 <td>
-                  <input
+                  <LinkField
                     aria-label="Copy link"
-                    onChange={(event) =>
-                      updateRow(row.id, { copyLink: event.target.value })
-                    }
+                    onChange={(value) => updateRow(row.id, { copyLink: value })}
                     placeholder="https://"
-                    type="url"
                     value={row.copyLink}
                   />
                 </td>
                 <td>
-                  <div className="art-cell">
-                    <label className="file-button">
-                      Insert image
-                      <input
-                        accept="image/*"
-                        onChange={(event) =>
-                          handleImageUpload(row.id, event.target.files?.[0])
-                        }
-                        type="file"
-                      />
-                    </label>
-                    {row.artImage ? (
-                      <>
-                        <img alt="" className="art-preview" src={row.artImage} />
-                        <button onClick={() => downloadImage(row)} type="button">
-                          Download
-                        </button>
-                        <span className="file-name">{row.artFileName}</span>
-                      </>
-                    ) : (
-                      <span className="file-name">No image</span>
-                    )}
-                  </div>
+                  <LinkField
+                    aria-label="Email art link"
+                    onChange={(value) => updateRow(row.id, { artLink: value })}
+                    placeholder="https://"
+                    value={row.artLink}
+                  />
                 </td>
                 <td>
                   <textarea
@@ -1603,29 +1607,26 @@ function EmailDashboard() {
                   />
                 </td>
                 <td>
-                  <input
+                  <LinkField
                     aria-label="Link 1"
-                    onChange={(event) => updateRow(row.id, { link1: event.target.value })}
+                    onChange={(value) => updateRow(row.id, { link1: value })}
                     placeholder="https://"
-                    type="url"
                     value={row.link1}
                   />
                 </td>
                 <td>
-                  <input
+                  <LinkField
                     aria-label="Link 2"
-                    onChange={(event) => updateRow(row.id, { link2: event.target.value })}
+                    onChange={(value) => updateRow(row.id, { link2: value })}
                     placeholder="https://"
-                    type="url"
                     value={row.link2}
                   />
                 </td>
                 <td>
-                  <input
+                  <LinkField
                     aria-label="Link 3"
-                    onChange={(event) => updateRow(row.id, { link3: event.target.value })}
+                    onChange={(value) => updateRow(row.id, { link3: value })}
                     placeholder="https://"
-                    type="url"
                     value={row.link3}
                   />
                 </td>
@@ -2729,20 +2730,18 @@ function SmsDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="SMS art link"
-                      onChange={(event) => updateRow(row.id, { artLink: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { artLink: value })}
                       placeholder="https://"
-                      type="url"
                       value={row.artLink}
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="SMS link"
-                      onChange={(event) => updateRow(row.id, { linkUrl: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { linkUrl: value })}
                       placeholder="https://"
-                      type="url"
                       value={row.linkUrl}
                     />
                   </td>
@@ -3119,24 +3118,20 @@ function InstaDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Instagram copy link"
-                      onChange={(event) => updateRow(row.id, { copyLink: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { copyLink: value })}
                       placeholder="https://"
-                      type="url"
                       value={row.copyLink}
                     />
                   </td>
                   {(['artLink1', 'artLink2', 'artLink3', 'artLink4', 'artLink5'] as const).map(
                     (field, index) => (
                       <td key={field}>
-                        <input
+                        <LinkField
                           aria-label={`Instagram art link ${index + 1}`}
-                          onChange={(event) =>
-                            updateRow(row.id, { [field]: event.target.value })
-                          }
+                          onChange={(value) => updateRow(row.id, { [field]: value })}
                           placeholder="https://"
-                          type="url"
                           value={row[field]}
                         />
                       </td>
@@ -3491,12 +3486,11 @@ function TiktokDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="TikTok video links"
-                      onChange={(event) =>
-                        updateRow(row.id, { videoLinks: event.target.value })
-                      }
+                      onChange={(value) => updateRow(row.id, { videoLinks: value })}
                       placeholder="Video link or asset label"
+                      type="text"
                       value={row.videoLinks}
                     />
                   </td>
@@ -3662,8 +3656,7 @@ function MockupDashboard() {
       approval: 'Pending Approval',
       date: '',
       link: '',
-      mockupFileName: '',
-      mockupImage: '',
+      mockupLink: '',
       obs: '',
       platform: '',
     }
@@ -3712,32 +3705,10 @@ function MockupDashboard() {
     }
   }
 
-  function handleMockupUpload(id: string, file?: File) {
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      updateRow(id, {
-        mockupFileName: file.name,
-        mockupImage: String(reader.result || ''),
-      })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  function downloadMockup(row: MockupRow) {
-    if (!row.mockupImage) return
-
-    const link = document.createElement('a')
-    link.href = row.mockupImage
-    link.download = row.mockupFileName || `${row.id}-mockup.png`
-    link.click()
-  }
-
   function exportCsv() {
-    const headers = ['Date', 'Platform', 'Link', 'Mockup File', 'Approval', 'Notes']
+    const headers = ['Date', 'Platform', 'Link', 'Mockup Link', 'Approval', 'Notes']
     const body = rows.map((row) =>
-      [row.date, row.platform, row.link, row.mockupFileName, row.approval, row.obs]
+      [row.date, row.platform, row.link, row.mockupLink, row.approval, row.obs]
         .map(csvEscape)
         .join(','),
     )
@@ -3838,36 +3809,20 @@ function MockupDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Mockup link"
-                      onChange={(event) => updateRow(row.id, { link: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { link: value })}
                       placeholder="https://"
-                      type="url"
                       value={row.link}
                     />
                   </td>
                   <td>
-                    <div className="art-cell mockup-cell">
-                      <label className="file-button">
-                        Insert mockup
-                        <input
-                          accept="image/*"
-                          onChange={(event) =>
-                            handleMockupUpload(row.id, event.target.files?.[0])
-                          }
-                          type="file"
-                        />
-                      </label>
-                      {row.mockupImage ? (
-                        <>
-                          <img alt="" className="mockup-preview" src={row.mockupImage} />
-                          <button onClick={() => downloadMockup(row)} type="button">
-                            Download
-                          </button>
-                        </>
-                      ) : null}
-                      <span className="file-name">{row.mockupFileName || 'No mockup'}</span>
-                    </div>
+                    <LinkField
+                      aria-label="Mockup asset link"
+                      onChange={(value) => updateRow(row.id, { mockupLink: value })}
+                      placeholder="https://"
+                      value={row.mockupLink}
+                    />
                   </td>
                   <td>
                     <select
@@ -4193,10 +4148,11 @@ function AdsDharmaDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Ads Injection copy"
-                      onChange={(event) => updateRow(row.id, { copy: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { copy: value })}
                       placeholder="Copy link or label"
+                      type="text"
                       value={row.copy}
                     />
                   </td>
@@ -4210,19 +4166,21 @@ function AdsDharmaDashboard() {
                   </td>
                   {(['artLink1', 'artLink2', 'artLink3'] as const).map((field, index) => (
                     <td key={field}>
-                      <input
+                      <LinkField
                         aria-label={`Ads Injection art link ${index + 1}`}
-                        onChange={(event) => updateRow(row.id, { [field]: event.target.value })}
+                        onChange={(value) => updateRow(row.id, { [field]: value })}
                         placeholder="Art link"
+                        type="text"
                         value={row[field]}
                       />
                     </td>
                   ))}
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Ads Injection link links"
-                      onChange={(event) => updateRow(row.id, { linkLinks: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { linkLinks: value })}
                       placeholder="https://"
+                      type="text"
                       value={row.linkLinks}
                     />
                   </td>
@@ -4565,10 +4523,11 @@ function AdsBerberineDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Ads Supplement copy"
-                      onChange={(event) => updateRow(row.id, { copy: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { copy: value })}
                       placeholder="Copy link or label"
+                      type="text"
                       value={row.copy}
                     />
                   </td>
@@ -4582,19 +4541,21 @@ function AdsBerberineDashboard() {
                   </td>
                   {(['artLink1', 'artLink2', 'artLink3'] as const).map((field, index) => (
                     <td key={field}>
-                      <input
+                      <LinkField
                         aria-label={`Ads Supplement art link ${index + 1}`}
-                        onChange={(event) => updateRow(row.id, { [field]: event.target.value })}
+                        onChange={(value) => updateRow(row.id, { [field]: value })}
                         placeholder="Art link"
+                        type="text"
                         value={row[field]}
                       />
                     </td>
                   ))}
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Ads Supplement link links"
-                      onChange={(event) => updateRow(row.id, { linkLinks: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { linkLinks: value })}
                       placeholder="https://"
+                      type="text"
                       value={row.linkLinks}
                     />
                   </td>
@@ -4950,10 +4911,11 @@ function BannerDashboard() {
                     />
                   </td>
                   <td>
-                    <input
+                    <LinkField
                       aria-label="Banner art link"
-                      onChange={(event) => updateRow(row.id, { artLink: event.target.value })}
+                      onChange={(value) => updateRow(row.id, { artLink: value })}
                       placeholder="https://"
+                      type="text"
                       value={row.artLink}
                     />
                   </td>
