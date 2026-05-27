@@ -273,16 +273,18 @@ type InstaRow = {
   date: string
   time: string
   copyLink: string
-  artLink1: string
-  artLink2: string
-  artLink3: string
-  artLink4: string
-  artLink5: string
+  feed1: string
+  feed2: string
+  feed3: string
+  feed4: string
+  feed5: string
   caption: string
   correction: string
   approval: string
   obs: string
-  story: string
+  story1: string
+  story2: string
+  story3: string
   storyApproval: string
 }
 
@@ -292,16 +294,18 @@ type InstaDbRow = {
   date: string
   time: string
   copy_link: string | null
-  art_link_1: string | null
-  art_link_2: string | null
-  art_link_3: string | null
-  art_link_4: string | null
-  art_link_5: string | null
+  feed_1: string | null
+  feed_2: string | null
+  feed_3: string | null
+  feed_4: string | null
+  feed_5: string | null
   caption: string | null
   correction: string | null
   approval: string
   obs: string | null
-  story: string | null
+  story_1: string | null
+  story_2: string | null
+  story_3: string | null
   story_approval: string
 }
 
@@ -547,18 +551,20 @@ const initialInstaRows: InstaRow[] = [
   {
     id: 'insta-1',
     approval: 'Approved',
-    artLink1: '',
-    artLink2: '',
-    artLink3: '',
-    artLink4: '',
-    artLink5: '',
+    feed1: '',
+    feed2: '',
+    feed3: '',
+    feed4: '',
+    feed5: '',
     caption:
       'Support makes the difference. Comment NOW and start your plan.',
     copyLink: 'https://trello.com/c/',
     correction: '',
     date: '2026-05-18',
     obs: '',
-    story: '05-18',
+    story1: '',
+    story2: '',
+    story3: '',
     storyApproval: 'Not Approved',
     time: '17:15',
   },
@@ -809,17 +815,19 @@ function toInstaRow(row: InstaDbRow): InstaRow {
   return {
     id: row.id,
     approval: normalizeApproval(row.approval),
-    artLink1: row.art_link_1 || '',
-    artLink2: row.art_link_2 || '',
-    artLink3: row.art_link_3 || '',
-    artLink4: row.art_link_4 || '',
-    artLink5: row.art_link_5 || '',
+    feed1: row.feed_1 || '',
+    feed2: row.feed_2 || '',
+    feed3: row.feed_3 || '',
+    feed4: row.feed_4 || '',
+    feed5: row.feed_5 || '',
     caption: translateLegacyEnglish(row.caption),
     copyLink: row.copy_link || '',
     correction: row.correction || '',
     date: row.date,
     obs: row.obs || '',
-    story: row.story || '',
+    story1: row.story_1 || '',
+    story2: row.story_2 || '',
+    story3: row.story_3 || '',
     storyApproval: normalizeApproval(row.story_approval),
     time: row.time?.slice(0, 5) || '09:00',
   }
@@ -832,16 +840,18 @@ function toInstaDbPayload(row: InstaRow, rowOrder: number) {
     date: row.date,
     time: row.time,
     copy_link: row.copyLink,
-    art_link_1: row.artLink1,
-    art_link_2: row.artLink2,
-    art_link_3: row.artLink3,
-    art_link_4: row.artLink4,
-    art_link_5: row.artLink5,
+    feed_1: row.feed1,
+    feed_2: row.feed2,
+    feed_3: row.feed3,
+    feed_4: row.feed4,
+    feed_5: row.feed5,
     caption: row.caption,
     correction: row.correction,
     approval: toStoredApproval(row.approval),
     obs: row.obs,
-    story: row.story,
+    story_1: row.story1,
+    story_2: row.story2,
+    story_3: row.story3,
     story_approval: toStoredApproval(row.storyApproval),
   }
 }
@@ -2917,17 +2927,19 @@ function InstaDashboard() {
     const nextRow: InstaRow = {
       id: crypto.randomUUID(),
       approval: 'Pending Approval',
-      artLink1: '',
-      artLink2: '',
-      artLink3: '',
-      artLink4: '',
-      artLink5: '',
+      feed1: '',
+      feed2: '',
+      feed3: '',
+      feed4: '',
+      feed5: '',
       caption: '',
       copyLink: '',
       correction: '',
       date: new Date().toISOString().slice(0, 10),
       obs: '',
-      story: '',
+      story1: '',
+      story2: '',
+      story3: '',
       storyApproval: 'Pending Approval',
       time: '09:00',
     }
@@ -2981,16 +2993,18 @@ function InstaDashboard() {
       'Date',
       'Time',
       'Copy Link',
-      'Art Link 1',
-      'Art Link 2',
-      'Art Link 3',
-      'Art Link 4',
-      'Art Link 5',
+      'Feed 1',
+      'Feed 2',
+      'Feed 3',
+      'Feed 4',
+      'Feed 5',
       'Caption',
       'Correction',
       'Approval',
+      'Story 1',
+      'Story 2',
+      'Story 3',
       'Notes',
-      'Story',
       'Story Approval',
     ]
     const body = rows.map((row) =>
@@ -2998,16 +3012,18 @@ function InstaDashboard() {
         row.date,
         row.time,
         row.copyLink,
-        row.artLink1,
-        row.artLink2,
-        row.artLink3,
-        row.artLink4,
-        row.artLink5,
+        row.feed1,
+        row.feed2,
+        row.feed3,
+        row.feed4,
+        row.feed5,
         row.caption,
         row.correction,
         row.approval,
+        row.story1,
+        row.story2,
+        row.story3,
         row.obs,
-        row.story,
         row.storyApproval,
       ]
         .map(csvEscape)
@@ -3028,7 +3044,7 @@ function InstaDashboard() {
           <p className="eyebrow">Instagram Schedule</p>
           <h2 id="insta-dashboard-title">Feed & Story Production Table</h2>
           <p>
-            Organize post timing, art links, captions, corrections, story assets, and approvals
+            Organize post timing, feed links, captions, corrections, story links, and approvals
             in one visual production tracker.
           </p>
         </div>
@@ -3067,16 +3083,18 @@ function InstaDashboard() {
               <th>Date</th>
               <th>Time</th>
               <th>Copy</th>
-              <th>Art 1</th>
-              <th>Art 2</th>
-              <th>Art 3</th>
-              <th>Art 4</th>
-              <th>Art 5</th>
+              <th>Feed 1</th>
+              <th>Feed 2</th>
+              <th>Feed 3</th>
+              <th>Feed 4</th>
+              <th>Feed 5</th>
               <th>Caption</th>
               <th>Correction</th>
               <th>Approval</th>
+              <th>Story 1</th>
+              <th>Story 2</th>
+              <th>Story 3</th>
               <th>Notes</th>
-              <th>Story</th>
               <th>Story Approval</th>
               <th></th>
             </tr>
@@ -3084,7 +3102,7 @@ function InstaDashboard() {
           <tbody>
             {isLoadingRows ? (
               <tr>
-                <td className="empty-table-message" colSpan={15}>
+                <td className="empty-table-message" colSpan={17}>
                   Loading saved Instagram rows...
                 </td>
               </tr>
@@ -3092,7 +3110,7 @@ function InstaDashboard() {
 
             {!isLoadingRows && rows.length === 0 ? (
               <tr>
-                <td className="empty-table-message" colSpan={15}>
+                <td className="empty-table-message" colSpan={17}>
                   No saved Instagram rows yet. Add a row to start planning.
                 </td>
               </tr>
@@ -3125,11 +3143,11 @@ function InstaDashboard() {
                       value={row.copyLink}
                     />
                   </td>
-                  {(['artLink1', 'artLink2', 'artLink3', 'artLink4', 'artLink5'] as const).map(
+                  {(['feed1', 'feed2', 'feed3', 'feed4', 'feed5'] as const).map(
                     (field, index) => (
                       <td key={field}>
                         <LinkField
-                          aria-label={`Instagram art link ${index + 1}`}
+                          aria-label={`Instagram feed ${index + 1}`}
                           onChange={(value) => updateRow(row.id, { [field]: value })}
                           placeholder="https://"
                           value={row[field]}
@@ -3171,20 +3189,22 @@ function InstaDashboard() {
                       ))}
                     </select>
                   </td>
+                  {(['story1', 'story2', 'story3'] as const).map((field, index) => (
+                    <td key={field}>
+                      <LinkField
+                        aria-label={`Instagram story ${index + 1}`}
+                        onChange={(value) => updateRow(row.id, { [field]: value })}
+                        placeholder="https://"
+                        value={row[field]}
+                      />
+                    </td>
+                  ))}
                   <td>
                     <textarea
                       aria-label="Instagram observations"
                       onChange={(event) => updateRow(row.id, { obs: event.target.value })}
                       placeholder="Notes"
                       value={row.obs}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label="Instagram story"
-                      onChange={(event) => updateRow(row.id, { story: event.target.value })}
-                      placeholder="Story asset"
-                      value={row.story}
                     />
                   </td>
                   <td>
@@ -5008,7 +5028,7 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
       : isSms
         ? 'Coordinate concise broadcast copy, links, approvals, and send timing for fast-moving SMS campaigns.'
         : isInsta
-          ? 'Plan Instagram posts, captions, art links, corrections, stories, and approvals from one visual content calendar.'
+          ? 'Plan Instagram posts, captions, feed links, corrections, stories, and approvals from one visual content calendar.'
           : isTiktok
             ? 'Coordinate TikTok video links, captions, approval status, and content notes for short-form campaign production.'
             : isMockup
