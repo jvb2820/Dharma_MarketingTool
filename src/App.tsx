@@ -1,5 +1,5 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { createClient, type Session } from '@supabase/supabase-js'
 import './App.css'
 
@@ -210,14 +210,10 @@ type EmailRow = {
   id: string
   date: string
   time: string
-  copyLink: string
-  artLink: string
-  subject: string
-  link1: string
-  link2: string
-  link3: string
+  creativeLink: string
+  headline: string
   copyReady: boolean
-  artReady: boolean
+  creativeReady: boolean
   approval: string
   obs: string
   scheduled: boolean
@@ -228,14 +224,10 @@ type EmailDbRow = {
   row_order: number
   date: string
   time: string
-  copy_link: string | null
-  art_link: string | null
-  subject: string | null
-  link_1: string | null
-  link_2: string | null
-  link_3: string | null
+  creative_link: string | null
+  headline: string | null
   copy_ready: boolean
-  art_ready: boolean
+  creative_ready: boolean
   approval: string
   obs: string | null
   scheduled: boolean
@@ -272,19 +264,11 @@ type InstaRow = {
   id: string
   date: string
   time: string
-  copyLink: string
-  feed1: string
-  feed2: string
-  feed3: string
-  feed4: string
-  feed5: string
+  feed: string
   caption: string
-  correction: string
   approval: string
   obs: string
-  story1: string
-  story2: string
-  story3: string
+  stories: string
   storyApproval: string
 }
 
@@ -293,19 +277,11 @@ type InstaDbRow = {
   row_order: number
   date: string
   time: string
-  copy_link: string | null
-  feed_1: string | null
-  feed_2: string | null
-  feed_3: string | null
-  feed_4: string | null
-  feed_5: string | null
+  feed: string | null
   caption: string | null
-  correction: string | null
   approval: string
   obs: string | null
-  story_1: string | null
-  story_2: string | null
-  story_3: string | null
+  stories: string | null
   story_approval: string
 }
 
@@ -501,33 +477,25 @@ const initialEmailRows: EmailRow[] = [
   {
     id: 'email-1',
     approval: 'Approved',
-    artLink: '',
-    artReady: true,
-    copyLink: 'https://trello.com/c/',
+    creativeLink: '',
+    creativeReady: true,
     copyReady: true,
     date: '2026-05-13',
-    link1: 'https://dharmanaturals.com/',
-    link2: 'https://wa.link/',
-    link3: '',
+    headline: 'Weight loss injections',
     obs: '',
     scheduled: true,
-    subject: 'Weight loss injections',
     time: '08:00',
   },
   {
     id: 'email-2',
     approval: 'Pending Approval',
-    artLink: '',
-    artReady: false,
-    copyLink: 'https://trello.com/c/',
+    creativeLink: '',
+    creativeReady: false,
     copyReady: true,
     date: '2026-05-21',
-    link1: 'https://dharmanaturals.com/',
-    link2: 'https://wa.link/',
-    link3: '',
+    headline: 'This week, celebrate feeling lighter',
     obs: 'Add final offer link before scheduling.',
     scheduled: false,
-    subject: 'This week, celebrate feeling lighter',
     time: '11:00',
   },
 ]
@@ -551,20 +519,12 @@ const initialInstaRows: InstaRow[] = [
   {
     id: 'insta-1',
     approval: 'Approved',
-    feed1: '',
-    feed2: '',
-    feed3: '',
-    feed4: '',
-    feed5: '',
     caption:
       'Support makes the difference. Comment NOW and start your plan.',
-    copyLink: 'https://trello.com/c/',
-    correction: '',
     date: '2026-05-18',
+    feed: '',
     obs: '',
-    story1: '',
-    story2: '',
-    story3: '',
+    stories: '',
     storyApproval: 'Not Approved',
     time: '17:15',
   },
@@ -745,17 +705,13 @@ function toEmailRow(row: EmailDbRow): EmailRow {
   return {
     id: row.id,
     approval: normalizeApproval(row.approval),
-    artLink: row.art_link || '',
-    artReady: row.art_ready,
-    copyLink: row.copy_link || '',
+    creativeLink: row.creative_link || '',
+    creativeReady: row.creative_ready,
     copyReady: row.copy_ready,
     date: row.date,
-    link1: row.link_1 || '',
-    link2: row.link_2 || '',
-    link3: row.link_3 || '',
+    headline: translateLegacyEnglish(row.headline),
     obs: row.obs || '',
     scheduled: row.scheduled,
-    subject: translateLegacyEnglish(row.subject),
     time: row.time?.slice(0, 5) || '09:00',
   }
 }
@@ -766,14 +722,10 @@ function toEmailDbPayload(row: EmailRow, rowOrder: number) {
     row_order: rowOrder,
     date: row.date,
     time: row.time,
-    copy_link: row.copyLink,
-    art_link: row.artLink,
-    subject: row.subject,
-    link_1: row.link1,
-    link_2: row.link2,
-    link_3: row.link3,
+    creative_link: row.creativeLink,
+    headline: row.headline,
     copy_ready: row.copyReady,
-    art_ready: row.artReady,
+    creative_ready: row.creativeReady,
     approval: toStoredApproval(row.approval),
     obs: row.obs,
     scheduled: row.scheduled,
@@ -815,19 +767,11 @@ function toInstaRow(row: InstaDbRow): InstaRow {
   return {
     id: row.id,
     approval: normalizeApproval(row.approval),
-    feed1: row.feed_1 || '',
-    feed2: row.feed_2 || '',
-    feed3: row.feed_3 || '',
-    feed4: row.feed_4 || '',
-    feed5: row.feed_5 || '',
     caption: translateLegacyEnglish(row.caption),
-    copyLink: row.copy_link || '',
-    correction: row.correction || '',
     date: row.date,
+    feed: row.feed || '',
     obs: row.obs || '',
-    story1: row.story_1 || '',
-    story2: row.story_2 || '',
-    story3: row.story_3 || '',
+    stories: row.stories || '',
     storyApproval: normalizeApproval(row.story_approval),
     time: row.time?.slice(0, 5) || '09:00',
   }
@@ -839,19 +783,11 @@ function toInstaDbPayload(row: InstaRow, rowOrder: number) {
     row_order: rowOrder,
     date: row.date,
     time: row.time,
-    copy_link: row.copyLink,
-    feed_1: row.feed1,
-    feed_2: row.feed2,
-    feed_3: row.feed3,
-    feed_4: row.feed4,
-    feed_5: row.feed5,
+    feed: row.feed,
     caption: row.caption,
-    correction: row.correction,
     approval: toStoredApproval(row.approval),
     obs: row.obs,
-    story_1: row.story1,
-    story_2: row.story2,
-    story_3: row.story3,
+    stories: row.stories,
     story_approval: toStoredApproval(row.storyApproval),
   }
 }
@@ -1015,6 +951,152 @@ function csvEscape(value: string | boolean) {
   return `"${String(value).replace(/"/g, '""')}"`
 }
 
+const tableRowsPerPage = 10
+
+function useTablePagination(totalRows: number) {
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(totalRows / tableRowsPerPage))
+  const currentPage = Math.min(page, totalPages)
+
+  const startIndex = (currentPage - 1) * tableRowsPerPage
+  const endIndex = Math.min(startIndex + tableRowsPerPage, totalRows)
+
+  return {
+    endIndex,
+    page: currentPage,
+    setPage,
+    startIndex,
+    totalPages,
+  }
+}
+
+function TableScroller({ children }: { children: ReactNode }) {
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const isSyncingRef = useRef(false)
+  const [scrollWidth, setScrollWidth] = useState(0)
+
+  useEffect(() => {
+    const tableScroll = tableScrollRef.current
+    if (!tableScroll) return
+
+    const updateScrollWidth = () => setScrollWidth(tableScroll.scrollWidth)
+    updateScrollWidth()
+
+    const resizeObserver = new ResizeObserver(updateScrollWidth)
+    resizeObserver.observe(tableScroll)
+
+    const table = tableScroll.querySelector('table')
+    if (table) resizeObserver.observe(table)
+
+    return () => resizeObserver.disconnect()
+  }, [children])
+
+  function syncScroll(source: HTMLDivElement, target: HTMLDivElement | null) {
+    if (!target || isSyncingRef.current) return
+
+    isSyncingRef.current = true
+    target.scrollLeft = source.scrollLeft
+    window.requestAnimationFrame(() => {
+      isSyncingRef.current = false
+    })
+  }
+
+  function nudgeTableScroll(direction: -1 | 1) {
+    tableScrollRef.current?.scrollBy({
+      behavior: 'smooth',
+      left: direction * 360,
+    })
+  }
+
+  return (
+    <div className="table-shell">
+      <div className="table-scroll-controls" aria-label="Horizontal table controls">
+        <button
+          aria-label="Scroll table left"
+          className="table-scroll-button"
+          onClick={() => nudgeTableScroll(-1)}
+          type="button"
+        >
+          &larr;
+        </button>
+        <div
+          aria-label="Top horizontal table scrollbar"
+          className="table-top-scroll"
+          onScroll={(event) =>
+            syncScroll(event.currentTarget, tableScrollRef.current)
+          }
+          ref={topScrollRef}
+          role="presentation"
+        >
+          <div style={{ width: scrollWidth }} />
+        </div>
+        <button
+          aria-label="Scroll table right"
+          className="table-scroll-button"
+          onClick={() => nudgeTableScroll(1)}
+          type="button"
+        >
+          &rarr;
+        </button>
+      </div>
+
+      <div
+        className="email-table-wrap"
+        onScroll={(event) => syncScroll(event.currentTarget, topScrollRef.current)}
+        ref={tableScrollRef}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function TablePagination({
+  endIndex,
+  onPageChange,
+  page,
+  startIndex,
+  totalPages,
+  totalRows,
+}: {
+  endIndex: number
+  onPageChange: (page: number) => void
+  page: number
+  startIndex: number
+  totalPages: number
+  totalRows: number
+}) {
+  if (totalRows === 0) return null
+
+  return (
+    <div className="table-pagination" aria-label="Table pagination">
+      <span>
+        Rows {startIndex + 1}-{endIndex} of {totalRows}
+      </span>
+      <div className="table-pagination-actions">
+        <button
+          disabled={page === 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          type="button"
+        >
+          Previous
+        </button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <button
+          disabled={page === totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          type="button"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function toDateInputValue(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -1082,32 +1164,24 @@ function emailRowsToCsv(rows: EmailRow[]) {
   const headers = [
     'Date',
     'Time',
-    'Copy Link',
-    'Art Link',
-    'Subject',
-    'Link 1',
-    'Link 2',
-    'Link 3',
-    'Copy',
-    'Art',
+    'Creative',
+    'Headline',
     'Approval',
     'Notes',
-    'Schedule',
+    'Copy',
+    'Creative Ready',
+    'Scheduled',
   ]
   const body = rows.map((row) =>
     [
       row.date,
       row.time,
-      row.copyLink,
-      row.artLink,
-      row.subject,
-      row.link1,
-      row.link2,
-      row.link3,
-      row.copyReady,
-      row.artReady,
+      row.creativeLink,
+      row.headline,
       row.approval,
       row.obs,
+      row.copyReady,
+      row.creativeReady,
       row.scheduled,
     ]
       .map(csvEscape)
@@ -1168,6 +1242,42 @@ function toClickableHref(url: string) {
   return url.toLowerCase().startsWith('www.') ? `https://${url}` : url
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg aria-hidden="true" className="field-action-icon" viewBox="0 0 24 24">
+      <path d="M14 5h5v5" />
+      <path d="m10 14 9-9" />
+      <path d="M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" />
+    </svg>
+  )
+}
+
+function CopyIcon() {
+  return (
+    <svg aria-hidden="true" className="field-action-icon" viewBox="0 0 24 24">
+      <rect height="14" rx="2" ry="2" width="14" x="8" y="8" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  )
+}
+
+async function copyToClipboard(value: string) {
+  if (!value) return
+
+  try {
+    await navigator.clipboard.writeText(value)
+  } catch {
+    const textarea = document.createElement('textarea')
+    textarea.value = value
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+  }
+}
+
 function LinkField({
   'aria-label': ariaLabel,
   onChange,
@@ -1182,6 +1292,7 @@ function LinkField({
   value: string
 }) {
   const links = getClickableUrls(value)
+  const firstLink = links[0]
 
   return (
     <div className="link-field">
@@ -1192,25 +1303,65 @@ function LinkField({
         type={type}
         value={value}
       />
-      {links.length > 0 ? (
-        <div className="link-field-actions">
-          {links.map((link, index) => {
-            const href = toClickableHref(link)
+      {value.trim() ? (
+        <div className="field-actions">
+          {firstLink ? (
+            <a
+              aria-label={`Open ${ariaLabel}`}
+              className="field-action-link"
+              href={toClickableHref(firstLink)}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <ExternalLinkIcon />
+            </a>
+          ) : null}
+          <button
+            aria-label={`Copy ${ariaLabel}`}
+            className="field-action-button"
+            onClick={() => copyToClipboard(value)}
+            type="button"
+          >
+            <CopyIcon />
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
-            return (
-              <span className="link-field-row" key={`${link}-${index}`}>
-                <a
-                  aria-label={`Open ${ariaLabel}${links.length > 1 ? ` ${index + 1}` : ''}`}
-                  className="link-field-open"
-                  href={href}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Open
-                </a>
-              </span>
-            )
-          })}
+function CopyableTextarea({
+  'aria-label': ariaLabel,
+  copyLabel = 'Copy',
+  onChange,
+  placeholder,
+  value,
+}: {
+  'aria-label': string
+  copyLabel?: string
+  onChange: (value: string) => void
+  placeholder: string
+  value: string
+}) {
+  return (
+    <div className="copyable-field">
+      <textarea
+        aria-label={ariaLabel}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+      {value.trim() ? (
+        <div className="field-actions">
+          <button
+            aria-label={`Copy ${ariaLabel}`}
+            className="field-action-button"
+            onClick={() => copyToClipboard(value)}
+            type="button"
+          >
+            <CopyIcon />
+            <span className="sr-only">{copyLabel}</span>
+          </button>
         </div>
       ) : null}
     </div>
@@ -1337,6 +1488,8 @@ function EmailDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [emailStatus, setEmailStatus] = useState('')
   const [emailError, setEmailError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -1436,19 +1589,15 @@ function EmailDashboard() {
   async function addRow() {
     const nextRow: EmailRow = {
       id: crypto.randomUUID(),
-        approval: 'Pending Approval',
-        artLink: '',
-        artReady: false,
-        copyLink: '',
-        copyReady: false,
-        date: new Date().toISOString().slice(0, 10),
-        link1: '',
-        link2: '',
-        link3: '',
-        obs: '',
-        scheduled: false,
-        subject: '',
-        time: '09:00',
+      approval: 'Pending Approval',
+      creativeLink: '',
+      creativeReady: false,
+      copyReady: false,
+      date: new Date().toISOString().slice(0, 10),
+      headline: '',
+      obs: '',
+      scheduled: false,
+      time: '09:00',
     }
 
     setRows((currentRows) => [...currentRows, nextRow])
@@ -1514,7 +1663,7 @@ function EmailDashboard() {
           <p className="eyebrow">Email Schedule</p>
           <h2 id="email-dashboard-title">Campaign Production Table</h2>
           <p>
-            Plan send dates, subjects, links, approvals, images, and scheduling status in
+            Plan send dates, headlines, creative links, approvals, and scheduling status in
             one editable table.
           </p>
         </div>
@@ -1537,30 +1686,26 @@ function EmailDashboard() {
         {emailError ? <strong>{emailError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table">
           <thead>
             <tr>
               <th>Date</th>
               <th>Time</th>
-              <th>Copy Link</th>
-              <th>Art</th>
-              <th>Subject</th>
-              <th>Link 1</th>
-              <th>Link 2</th>
-              <th>Link 3</th>
-              <th>Copy</th>
-              <th>Art</th>
+              <th>Creative</th>
+              <th>Headline</th>
               <th>Approval</th>
               <th>Notes</th>
-              <th>Schedule</th>
+              <th>Copy</th>
+              <th>Creative</th>
+              <th>Scheduled</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {isLoadingRows ? (
               <tr>
-                <td className="empty-table-message" colSpan={14}>
+                <td className="empty-table-message" colSpan={10}>
                   Loading saved email rows...
                 </td>
               </tr>
@@ -1568,13 +1713,13 @@ function EmailDashboard() {
 
             {!isLoadingRows && rows.length === 0 ? (
               <tr>
-                <td className="empty-table-message" colSpan={14}>
+                <td className="empty-table-message" colSpan={10}>
                   No saved rows yet. Add a row to start planning.
                 </td>
               </tr>
             ) : null}
 
-            {!isLoadingRows && rows.map((row) => (
+            {!isLoadingRows && visibleRows.map((row) => (
               <tr key={row.id}>
                 <td>
                   <input
@@ -1594,70 +1739,19 @@ function EmailDashboard() {
                 </td>
                 <td>
                   <LinkField
-                    aria-label="Copy link"
-                    onChange={(value) => updateRow(row.id, { copyLink: value })}
+                    aria-label="Email creative link"
+                    onChange={(value) => updateRow(row.id, { creativeLink: value })}
                     placeholder="https://"
-                    value={row.copyLink}
+                    value={row.creativeLink}
                   />
                 </td>
                 <td>
-                  <LinkField
-                    aria-label="Email art link"
-                    onChange={(value) => updateRow(row.id, { artLink: value })}
-                    placeholder="https://"
-                    value={row.artLink}
-                  />
-                </td>
-                <td>
-                  <textarea
-                    aria-label="Subject"
-                    onChange={(event) => updateRow(row.id, { subject: event.target.value })}
-                    placeholder="Email subject"
-                    value={row.subject}
-                  />
-                </td>
-                <td>
-                  <LinkField
-                    aria-label="Link 1"
-                    onChange={(value) => updateRow(row.id, { link1: value })}
-                    placeholder="https://"
-                    value={row.link1}
-                  />
-                </td>
-                <td>
-                  <LinkField
-                    aria-label="Link 2"
-                    onChange={(value) => updateRow(row.id, { link2: value })}
-                    placeholder="https://"
-                    value={row.link2}
-                  />
-                </td>
-                <td>
-                  <LinkField
-                    aria-label="Link 3"
-                    onChange={(value) => updateRow(row.id, { link3: value })}
-                    placeholder="https://"
-                    value={row.link3}
-                  />
-                </td>
-                <td className="check-cell">
-                  <input
-                    aria-label="Copy ready"
-                    checked={row.copyReady}
-                    onChange={(event) =>
-                      updateRow(row.id, { copyReady: event.target.checked })
-                    }
-                    type="checkbox"
-                  />
-                </td>
-                <td className="check-cell">
-                  <input
-                    aria-label="Art ready"
-                    checked={row.artReady}
-                    onChange={(event) =>
-                      updateRow(row.id, { artReady: event.target.checked })
-                    }
-                    type="checkbox"
+                  <CopyableTextarea
+                    aria-label="Headline"
+                    copyLabel="Copy"
+                    onChange={(value) => updateRow(row.id, { headline: value })}
+                    placeholder="Email headline"
+                    value={row.headline}
                   />
                 </td>
                 <td>
@@ -1686,6 +1780,26 @@ function EmailDashboard() {
                 </td>
                 <td className="check-cell">
                   <input
+                    aria-label="Copy ready"
+                    checked={row.copyReady}
+                    onChange={(event) =>
+                      updateRow(row.id, { copyReady: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                </td>
+                <td className="check-cell">
+                  <input
+                    aria-label="Creative ready"
+                    checked={row.creativeReady}
+                    onChange={(event) =>
+                      updateRow(row.id, { creativeReady: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                </td>
+                <td className="check-cell">
+                  <input
                     aria-label="Scheduled"
                     checked={row.scheduled}
                     onChange={(event) =>
@@ -1707,7 +1821,16 @@ function EmailDashboard() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -2457,6 +2580,8 @@ function SmsDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [smsStatus, setSmsStatus] = useState('')
   const [smsError, setSmsError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -2679,7 +2804,7 @@ function SmsDashboard() {
         {smsError ? <strong>{smsError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table sms-table">
           <thead>
             <tr>
@@ -2713,7 +2838,7 @@ function SmsDashboard() {
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -2732,9 +2857,10 @@ function SmsDashboard() {
                     />
                   </td>
                   <td>
-                    <textarea
+                    <CopyableTextarea
                       aria-label="SMS text"
-                      onChange={(event) => updateRow(row.id, { text: event.target.value })}
+                      copyLabel="Copy"
+                      onChange={(value) => updateRow(row.id, { text: value })}
                       placeholder="Write SMS copy"
                       value={row.text}
                     />
@@ -2814,7 +2940,16 @@ function SmsDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -2824,6 +2959,8 @@ function InstaDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [instaStatus, setInstaStatus] = useState('')
   const [instaError, setInstaError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -2927,19 +3064,11 @@ function InstaDashboard() {
     const nextRow: InstaRow = {
       id: crypto.randomUUID(),
       approval: 'Pending Approval',
-      feed1: '',
-      feed2: '',
-      feed3: '',
-      feed4: '',
-      feed5: '',
       caption: '',
-      copyLink: '',
-      correction: '',
       date: new Date().toISOString().slice(0, 10),
+      feed: '',
       obs: '',
-      story1: '',
-      story2: '',
-      story3: '',
+      stories: '',
       storyApproval: 'Pending Approval',
       time: '09:00',
     }
@@ -2992,38 +3121,22 @@ function InstaDashboard() {
     const headers = [
       'Date',
       'Time',
-      'Copy Link',
-      'Feed 1',
-      'Feed 2',
-      'Feed 3',
-      'Feed 4',
-      'Feed 5',
+      'Feed',
       'Caption',
-      'Correction',
-      'Approval',
-      'Story 1',
-      'Story 2',
-      'Story 3',
       'Notes',
+      'Approval',
+      'Stories',
       'Story Approval',
     ]
     const body = rows.map((row) =>
       [
         row.date,
         row.time,
-        row.copyLink,
-        row.feed1,
-        row.feed2,
-        row.feed3,
-        row.feed4,
-        row.feed5,
+        row.feed,
         row.caption,
-        row.correction,
-        row.approval,
-        row.story1,
-        row.story2,
-        row.story3,
         row.obs,
+        row.approval,
+        row.stories,
         row.storyApproval,
       ]
         .map(csvEscape)
@@ -3044,7 +3157,7 @@ function InstaDashboard() {
           <p className="eyebrow">Instagram Schedule</p>
           <h2 id="insta-dashboard-title">Feed & Story Production Table</h2>
           <p>
-            Organize post timing, feed links, captions, corrections, story links, and approvals
+            Organize post timing, feed links, captions, story links, notes, and approvals
             in one visual production tracker.
           </p>
         </div>
@@ -3076,33 +3189,25 @@ function InstaDashboard() {
         {instaError ? <strong>{instaError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table insta-table">
           <thead>
             <tr>
               <th>Date</th>
               <th>Time</th>
-              <th>Copy</th>
-              <th>Feed 1</th>
-              <th>Feed 2</th>
-              <th>Feed 3</th>
-              <th>Feed 4</th>
-              <th>Feed 5</th>
+              <th>Feed</th>
               <th>Caption</th>
-              <th>Correction</th>
-              <th>Approval</th>
-              <th>Story 1</th>
-              <th>Story 2</th>
-              <th>Story 3</th>
               <th>Notes</th>
-              <th>Story Approval</th>
+              <th>Approval</th>
+              <th>Stories</th>
+              <th>Approval</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {isLoadingRows ? (
               <tr>
-                <td className="empty-table-message" colSpan={17}>
+                <td className="empty-table-message" colSpan={9}>
                   Loading saved Instagram rows...
                 </td>
               </tr>
@@ -3110,14 +3215,14 @@ function InstaDashboard() {
 
             {!isLoadingRows && rows.length === 0 ? (
               <tr>
-                <td className="empty-table-message" colSpan={17}>
+                <td className="empty-table-message" colSpan={9}>
                   No saved Instagram rows yet. Add a row to start planning.
                 </td>
               </tr>
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -3137,38 +3242,27 @@ function InstaDashboard() {
                   </td>
                   <td>
                     <LinkField
-                      aria-label="Instagram copy link"
-                      onChange={(value) => updateRow(row.id, { copyLink: value })}
+                      aria-label="Instagram feed"
+                      onChange={(value) => updateRow(row.id, { feed: value })}
                       placeholder="https://"
-                      value={row.copyLink}
+                      value={row.feed}
                     />
                   </td>
-                  {(['feed1', 'feed2', 'feed3', 'feed4', 'feed5'] as const).map(
-                    (field, index) => (
-                      <td key={field}>
-                        <LinkField
-                          aria-label={`Instagram feed ${index + 1}`}
-                          onChange={(value) => updateRow(row.id, { [field]: value })}
-                          placeholder="https://"
-                          value={row[field]}
-                        />
-                      </td>
-                    ),
-                  )}
                   <td>
-                    <textarea
+                    <CopyableTextarea
                       aria-label="Instagram caption"
-                      onChange={(event) => updateRow(row.id, { caption: event.target.value })}
+                      copyLabel="Copy caption"
+                      onChange={(value) => updateRow(row.id, { caption: value })}
                       placeholder="Caption"
                       value={row.caption}
                     />
                   </td>
                   <td>
                     <textarea
-                      aria-label="Instagram correction"
-                      onChange={(event) => updateRow(row.id, { correction: event.target.value })}
-                      placeholder="Correction notes"
-                      value={row.correction}
+                      aria-label="Instagram observations"
+                      onChange={(event) => updateRow(row.id, { obs: event.target.value })}
+                      placeholder="Notes"
+                      value={row.obs}
                     />
                   </td>
                   <td>
@@ -3189,22 +3283,12 @@ function InstaDashboard() {
                       ))}
                     </select>
                   </td>
-                  {(['story1', 'story2', 'story3'] as const).map((field, index) => (
-                    <td key={field}>
-                      <LinkField
-                        aria-label={`Instagram story ${index + 1}`}
-                        onChange={(value) => updateRow(row.id, { [field]: value })}
-                        placeholder="https://"
-                        value={row[field]}
-                      />
-                    </td>
-                  ))}
                   <td>
-                    <textarea
-                      aria-label="Instagram observations"
-                      onChange={(event) => updateRow(row.id, { obs: event.target.value })}
-                      placeholder="Notes"
-                      value={row.obs}
+                    <LinkField
+                      aria-label="Instagram stories"
+                      onChange={(value) => updateRow(row.id, { stories: value })}
+                      placeholder="https://"
+                      value={row.stories}
                     />
                   </td>
                   <td>
@@ -3238,7 +3322,16 @@ function InstaDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -3248,6 +3341,8 @@ function TiktokDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [tiktokStatus, setTiktokStatus] = useState('')
   const [tiktokError, setTiktokError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -3456,7 +3551,7 @@ function TiktokDashboard() {
         {tiktokError ? <strong>{tiktokError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table tiktok-table">
           <thead>
             <tr>
@@ -3487,7 +3582,7 @@ function TiktokDashboard() {
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -3515,9 +3610,10 @@ function TiktokDashboard() {
                     />
                   </td>
                   <td>
-                    <textarea
+                    <CopyableTextarea
                       aria-label="TikTok caption"
-                      onChange={(event) => updateRow(row.id, { caption: event.target.value })}
+                      copyLabel="Copy caption"
+                      onChange={(value) => updateRow(row.id, { caption: value })}
                       placeholder="Caption"
                       value={row.caption}
                     />
@@ -3561,7 +3657,16 @@ function TiktokDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -3571,6 +3676,8 @@ function MockupDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [mockupStatus, setMockupStatus] = useState('')
   const [mockupError, setMockupError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -3779,7 +3886,7 @@ function MockupDashboard() {
         {mockupError ? <strong>{mockupError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table mockup-table">
           <thead>
             <tr>
@@ -3810,7 +3917,7 @@ function MockupDashboard() {
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -3883,7 +3990,16 @@ function MockupDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -3893,6 +4009,8 @@ function AdsDharmaDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [adsStatus, setAdsStatus] = useState('')
   const [adsError, setAdsError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -4123,7 +4241,7 @@ function AdsDharmaDashboard() {
         {adsError ? <strong>{adsError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table ads-dharma-table">
           <thead>
             <tr>
@@ -4157,7 +4275,7 @@ function AdsDharmaDashboard() {
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -4245,7 +4363,16 @@ function AdsDharmaDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -4255,6 +4382,8 @@ function AdsBerberineDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [adsStatus, setAdsStatus] = useState('')
   const [adsError, setAdsError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -4496,7 +4625,7 @@ function AdsBerberineDashboard() {
         {adsError ? <strong>{adsError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table ads-berberine-table">
           <thead>
             <tr>
@@ -4532,7 +4661,7 @@ function AdsBerberineDashboard() {
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -4638,7 +4767,16 @@ function AdsBerberineDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -4648,6 +4786,8 @@ function BannerDashboard() {
   const [isLoadingRows, setIsLoadingRows] = useState(true)
   const [bannerStatus, setBannerStatus] = useState('')
   const [bannerError, setBannerError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
 
   useEffect(() => {
     let isMounted = true
@@ -4869,7 +5009,7 @@ function BannerDashboard() {
         {bannerError ? <strong>{bannerError}</strong> : null}
       </div>
 
-      <div className="email-table-wrap">
+      <TableScroller>
         <table className="email-table banner-table">
           <thead>
             <tr>
@@ -4902,7 +5042,7 @@ function BannerDashboard() {
             ) : null}
 
             {!isLoadingRows &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <input
@@ -4998,7 +5138,16 @@ function BannerDashboard() {
               ))}
           </tbody>
         </table>
-      </div>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
     </section>
   )
 }
@@ -5028,7 +5177,7 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
       : isSms
         ? 'Coordinate concise broadcast copy, links, approvals, and send timing for fast-moving SMS campaigns.'
         : isInsta
-          ? 'Plan Instagram posts, captions, feed links, corrections, stories, and approvals from one visual content calendar.'
+          ? 'Plan Instagram posts, captions, feed links, stories, notes, and approvals from one visual content calendar.'
           : isTiktok
             ? 'Coordinate TikTok video links, captions, approval status, and content notes for short-form campaign production.'
             : isMockup
