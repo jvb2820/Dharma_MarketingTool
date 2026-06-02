@@ -1301,6 +1301,34 @@ function LinkField({
 }) {
   const links = getClickableUrls(value)
   const firstLink = links[0]
+  const [isCopied, setIsCopied] = useState(false)
+  const copiedTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+
+  useEffect(() => {
+    setIsCopied(false)
+  }, [value])
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) {
+        window.clearTimeout(copiedTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  async function handleCopy() {
+    await copyToClipboard(value)
+    setIsCopied(true)
+
+    if (copiedTimeoutRef.current) {
+      window.clearTimeout(copiedTimeoutRef.current)
+    }
+
+    copiedTimeoutRef.current = window.setTimeout(() => {
+      setIsCopied(false)
+      copiedTimeoutRef.current = null
+    }, 1800)
+  }
 
   return (
     <div className="link-field">
@@ -1325,13 +1353,16 @@ function LinkField({
             </a>
           ) : null}
           <button
-            aria-label={`Copy ${ariaLabel}`}
-            className="field-action-button"
-            onClick={() => copyToClipboard(value)}
+            aria-label={isCopied ? `${ariaLabel} copied` : `Copy ${ariaLabel}`}
+            className={`field-action-button ${isCopied ? 'is-copied' : ''}`}
+            onClick={handleCopy}
             type="button"
           >
             <CopyIcon />
           </button>
+          <span className={`copy-status ${isCopied ? 'is-visible' : ''}`} role="status">
+            Copied
+          </span>
         </div>
       ) : null}
     </div>
