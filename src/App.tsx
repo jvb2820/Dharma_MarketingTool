@@ -212,6 +212,7 @@ type EmailRow = {
   time: string
   creativeLink: string
   headline: string
+  linkUrl: string
   copyReady: boolean
   creativeReady: boolean
   approval: string
@@ -226,6 +227,7 @@ type EmailDbRow = {
   time: string
   creative_link: string | null
   headline: string | null
+  link_url: string | null
   copy_ready: boolean
   creative_ready: boolean
   approval: string
@@ -482,6 +484,7 @@ const initialEmailRows: EmailRow[] = [
     copyReady: true,
     date: '2026-05-13',
     headline: 'Weight loss injections',
+    linkUrl: '',
     obs: '',
     scheduled: true,
     time: '08:00',
@@ -494,6 +497,7 @@ const initialEmailRows: EmailRow[] = [
     copyReady: true,
     date: '2026-05-21',
     headline: 'This week, celebrate feeling lighter',
+    linkUrl: '',
     obs: 'Add final offer link before scheduling.',
     scheduled: false,
     time: '11:00',
@@ -710,6 +714,7 @@ function toEmailRow(row: EmailDbRow): EmailRow {
     copyReady: row.copy_ready,
     date: row.date,
     headline: translateLegacyEnglish(row.headline),
+    linkUrl: row.link_url || '',
     obs: row.obs || '',
     scheduled: row.scheduled,
     time: row.time?.slice(0, 5) || '09:00',
@@ -724,6 +729,7 @@ function toEmailDbPayload(row: EmailRow, rowOrder: number) {
     time: row.time,
     creative_link: row.creativeLink,
     headline: row.headline,
+    link_url: row.linkUrl,
     copy_ready: row.copyReady,
     creative_ready: row.creativeReady,
     approval: toStoredApproval(row.approval),
@@ -1166,6 +1172,7 @@ function emailRowsToCsv(rows: EmailRow[]) {
     'Time',
     'Creative',
     'Headline',
+    'Link',
     'Approval',
     'Notes',
     'Copy',
@@ -1178,6 +1185,7 @@ function emailRowsToCsv(rows: EmailRow[]) {
       row.time,
       row.creativeLink,
       row.headline,
+      row.linkUrl,
       row.approval,
       row.obs,
       row.copyReady,
@@ -1595,6 +1603,7 @@ function EmailDashboard() {
       copyReady: false,
       date: new Date().toISOString().slice(0, 10),
       headline: '',
+      linkUrl: '',
       obs: '',
       scheduled: false,
       time: '09:00',
@@ -1694,6 +1703,7 @@ function EmailDashboard() {
               <th>Time</th>
               <th>Creative</th>
               <th>Headline</th>
+              <th>Link</th>
               <th>Approval</th>
               <th>Notes</th>
               <th>Copy</th>
@@ -1705,7 +1715,7 @@ function EmailDashboard() {
           <tbody>
             {isLoadingRows ? (
               <tr>
-                <td className="empty-table-message" colSpan={10}>
+                <td className="empty-table-message" colSpan={11}>
                   Loading saved email rows...
                 </td>
               </tr>
@@ -1713,7 +1723,7 @@ function EmailDashboard() {
 
             {!isLoadingRows && rows.length === 0 ? (
               <tr>
-                <td className="empty-table-message" colSpan={10}>
+                <td className="empty-table-message" colSpan={11}>
                   No saved rows yet. Add a row to start planning.
                 </td>
               </tr>
@@ -1752,6 +1762,14 @@ function EmailDashboard() {
                     onChange={(value) => updateRow(row.id, { headline: value })}
                     placeholder="Email headline"
                     value={row.headline}
+                  />
+                </td>
+                <td>
+                  <LinkField
+                    aria-label="Email link"
+                    onChange={(value) => updateRow(row.id, { linkUrl: value })}
+                    placeholder="https://"
+                    value={row.linkUrl}
                   />
                 </td>
                 <td>
