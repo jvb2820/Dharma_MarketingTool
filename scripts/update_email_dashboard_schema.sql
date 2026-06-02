@@ -4,6 +4,7 @@ alter table public.email_dashboard_rows
   add column if not exists creative_link text,
   add column if not exists headline text,
   add column if not exists link_url text,
+  add column if not exists link_2_url text,
   add column if not exists creative_ready boolean not null default false;
 
 do $$
