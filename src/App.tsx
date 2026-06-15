@@ -963,23 +963,38 @@ function csvEscape(value: string | boolean) {
   return `"${String(value).replace(/"/g, '""')}"`
 }
 
-function sortRowsByDate<T extends { date: string; time?: string }>(rows: T[]) {
+function sortRowsByDateValue<T>(
+  rows: T[],
+  getDate: (row: T) => string,
+  getTime: (row: T) => string = () => '',
+) {
   return rows
     .map((row, index) => ({ index, row }))
     .sort((a, b) => {
-      if (!a.row.date && !b.row.date) return a.index - b.index
-      if (!a.row.date) return 1
-      if (!b.row.date) return -1
+      const aDate = getDate(a.row)
+      const bDate = getDate(b.row)
 
-      const dateComparison = a.row.date.localeCompare(b.row.date)
+      if (!aDate && !bDate) return a.index - b.index
+      if (!aDate) return 1
+      if (!bDate) return -1
+
+      const dateComparison = aDate.localeCompare(bDate)
       if (dateComparison !== 0) return dateComparison
 
-      const timeComparison = (a.row.time || '').localeCompare(b.row.time || '')
+      const timeComparison = getTime(a.row).localeCompare(getTime(b.row))
       if (timeComparison !== 0) return timeComparison
 
       return a.index - b.index
     })
     .map(({ row }) => row)
+}
+
+function sortRowsByDate<T extends { date: string; time?: string }>(rows: T[]) {
+  return sortRowsByDateValue(rows, (row) => row.date, (row) => row.time || '')
+}
+
+function sortBannerRowsByDate(rows: BannerRow[]) {
+  return sortRowsByDateValue(rows, (row) => row.startDate)
 }
 
 const tableRowsPerPage = 10
@@ -1578,12 +1593,12 @@ function EmailDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as EmailDbRow[]).map(toEmailRow))
+          setRows(sortRowsByDate((data as EmailDbRow[]).map(toEmailRow)))
           setEmailStatus(data.length ? 'Loaded from Supabase.' : 'No saved rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialEmailRows)
+          setRows(sortRowsByDate(initialEmailRows))
           setEmailError(
             error instanceof Error
               ? error.message
@@ -1608,15 +1623,18 @@ function EmailDashboard() {
     let updatedRow: EmailRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -1668,13 +1686,16 @@ function EmailDashboard() {
       time: '09:00',
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setEmailStatus('Saving new row...')
     setEmailError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/email_dashboard_rows`, {
-        body: JSON.stringify(toEmailDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toEmailDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
@@ -2690,12 +2711,12 @@ function SmsDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as SmsDbRow[]).map(toSmsRow))
+          setRows(sortRowsByDate((data as SmsDbRow[]).map(toSmsRow)))
           setSmsStatus(data.length ? 'Loaded from Supabase.' : 'No saved SMS rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialSmsRows)
+          setRows(sortRowsByDate(initialSmsRows))
           setSmsError(
             error instanceof Error ? error.message : 'Could not load SMS dashboard rows.',
           )
@@ -2718,15 +2739,18 @@ function SmsDashboard() {
     let updatedRow: SmsRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -2776,13 +2800,16 @@ function SmsDashboard() {
       time: '09:00',
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setSmsStatus('Saving new SMS row...')
     setSmsError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/sms_dashboard_rows`, {
-        body: JSON.stringify(toSmsDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toSmsDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
@@ -3451,12 +3478,12 @@ function TiktokDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as TiktokDbRow[]).map(toTiktokRow))
+          setRows(sortRowsByDate((data as TiktokDbRow[]).map(toTiktokRow)))
           setTiktokStatus(data.length ? 'Loaded from Supabase.' : 'No saved TikTok rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialTiktokRows)
+          setRows(sortRowsByDate(initialTiktokRows))
           setTiktokError(
             error instanceof Error
               ? error.message
@@ -3481,15 +3508,18 @@ function TiktokDashboard() {
     let updatedRow: TiktokRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -3539,13 +3569,16 @@ function TiktokDashboard() {
       videoLinks: '',
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setTiktokStatus('Saving new TikTok row...')
     setTiktokError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/tiktok_dashboard_rows`, {
-        body: JSON.stringify(toTiktokDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toTiktokDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
@@ -3786,12 +3819,12 @@ function MockupDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as MockupDbRow[]).map(toMockupRow))
+          setRows(sortRowsByDate((data as MockupDbRow[]).map(toMockupRow)))
           setMockupStatus(data.length ? 'Loaded from Supabase.' : 'No saved mockup rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialMockupRows)
+          setRows(sortRowsByDate(initialMockupRows))
           setMockupError(
             error instanceof Error
               ? error.message
@@ -3816,15 +3849,18 @@ function MockupDashboard() {
     let updatedRow: MockupRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -3874,13 +3910,16 @@ function MockupDashboard() {
       platform: '',
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setMockupStatus('Saving new mockup row...')
     setMockupError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/mockup_dashboard_rows`, {
-        body: JSON.stringify(toMockupDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toMockupDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
@@ -4119,12 +4158,12 @@ function AdsDharmaDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as AdsDharmaDbRow[]).map(toAdsDharmaRow))
+          setRows(sortRowsByDate((data as AdsDharmaDbRow[]).map(toAdsDharmaRow)))
           setAdsStatus(data.length ? 'Loaded from Supabase.' : 'No saved Ads Injection rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialAdsDharmaRows)
+          setRows(sortRowsByDate(initialAdsDharmaRows))
           setAdsError(error instanceof Error ? error.message : 'Could not load Ads Injection rows.')
         }
       } finally {
@@ -4145,15 +4184,18 @@ function AdsDharmaDashboard() {
     let updatedRow: AdsDharmaRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -4206,13 +4248,16 @@ function AdsDharmaDashboard() {
       textReady: false,
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setAdsStatus('Saving new Ads Injection row...')
     setAdsError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/ads_dharma_dashboard_rows`, {
-        body: JSON.stringify(toAdsDharmaDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toAdsDharmaDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
@@ -4492,12 +4537,12 @@ function AdsBerberineDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as AdsBerberineDbRow[]).map(toAdsBerberineRow))
+          setRows(sortRowsByDate((data as AdsBerberineDbRow[]).map(toAdsBerberineRow)))
           setAdsStatus(data.length ? 'Loaded from Supabase.' : 'No saved Ads Supplement rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialAdsBerberineRows)
+          setRows(sortRowsByDate(initialAdsBerberineRows))
           setAdsError(
             error instanceof Error ? error.message : 'Could not load Ads Supplement rows.',
           )
@@ -4520,15 +4565,18 @@ function AdsBerberineDashboard() {
     let updatedRow: AdsBerberineRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -4583,13 +4631,16 @@ function AdsBerberineDashboard() {
       textReady: false,
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setAdsStatus('Saving new Ads Supplement row...')
     setAdsError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/ads_berberine_dashboard_rows`, {
-        body: JSON.stringify(toAdsBerberineDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toAdsBerberineDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
@@ -4896,12 +4947,12 @@ function BannerDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as BannerDbRow[]).map(toBannerRow))
+          setRows(sortBannerRowsByDate((data as BannerDbRow[]).map(toBannerRow)))
           setBannerStatus(data.length ? 'Loaded from Supabase.' : 'No saved Banner rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialBannerRows)
+          setRows(sortBannerRowsByDate(initialBannerRows))
           setBannerError(error instanceof Error ? error.message : 'Could not load Banner rows.')
         }
       } finally {
@@ -4922,15 +4973,18 @@ function BannerDashboard() {
     let updatedRow: BannerRow | null = null
     let rowOrder = 0
 
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    setRows((currentRows) => {
+      const nextRows = sortBannerRowsByDate(
+        currentRows.map((row) => {
         if (row.id !== id) return row
 
         updatedRow = { ...row, ...changes }
-        rowOrder = index
         return updatedRow
-      }),
-    )
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
 
     window.setTimeout(() => {
       if (updatedRow) {
@@ -4979,13 +5033,16 @@ function BannerDashboard() {
       text: '',
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortBannerRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setBannerStatus('Saving new Banner row...')
     setBannerError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/banner_dashboard_rows`, {
-        body: JSON.stringify(toBannerDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toBannerDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
