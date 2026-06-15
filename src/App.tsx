@@ -963,6 +963,25 @@ function csvEscape(value: string | boolean) {
   return `"${String(value).replace(/"/g, '""')}"`
 }
 
+function sortRowsByDate<T extends { date: string; time?: string }>(rows: T[]) {
+  return rows
+    .map((row, index) => ({ index, row }))
+    .sort((a, b) => {
+      if (!a.row.date && !b.row.date) return a.index - b.index
+      if (!a.row.date) return 1
+      if (!b.row.date) return -1
+
+      const dateComparison = a.row.date.localeCompare(b.row.date)
+      if (dateComparison !== 0) return dateComparison
+
+      const timeComparison = (a.row.time || '').localeCompare(b.row.time || '')
+      if (timeComparison !== 0) return timeComparison
+
+      return a.index - b.index
+    })
+    .map(({ row }) => row)
+}
+
 const tableRowsPerPage = 10
 
 function useTablePagination(totalRows: number) {
@@ -3050,12 +3069,12 @@ function InstaDashboard() {
         }
 
         if (isMounted) {
-          setRows((data as InstaDbRow[]).map(toInstaRow))
+          setRows(sortRowsByDate((data as InstaDbRow[]).map(toInstaRow)))
           setInstaStatus(data.length ? 'Loaded from Supabase.' : 'No saved Instagram rows yet.')
         }
       } catch (error) {
         if (isMounted) {
-          setRows(initialInstaRows)
+          setRows(sortRowsByDate(initialInstaRows))
           setInstaError(
             error instanceof Error
               ? error.message
@@ -3077,24 +3096,21 @@ function InstaDashboard() {
   }, [])
 
   function updateRow(id: string, changes: Partial<InstaRow>) {
-    let updatedRow: InstaRow | null = null
-    let rowOrder = 0
-
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
+    const nextRows = sortRowsByDate(
+      rows.map((row) => {
         if (row.id !== id) return row
 
-        updatedRow = { ...row, ...changes }
-        rowOrder = index
-        return updatedRow
+        return { ...row, ...changes }
       }),
     )
+    const updatedRow = nextRows.find((row) => row.id === id)
+    const rowOrder = nextRows.findIndex((row) => row.id === id)
 
-    window.setTimeout(() => {
-      if (updatedRow) {
-        saveRow(updatedRow, rowOrder)
-      }
-    }, 0)
+    setRows(nextRows)
+
+    if (updatedRow && rowOrder >= 0) {
+      saveRow(updatedRow, rowOrder)
+    }
   }
 
   async function saveRow(row: InstaRow, rowOrder: number) {
@@ -3140,13 +3156,16 @@ function InstaDashboard() {
       time: '09:00',
     }
 
-    setRows((currentRows) => [...currentRows, nextRow])
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
     setInstaStatus('Saving new Instagram row...')
     setInstaError('')
 
     try {
       const response = await fetch(`${supabaseRestUrl}/insta_dashboard_rows`, {
-        body: JSON.stringify(toInstaDbPayload(nextRow, rows.length)),
+        body: JSON.stringify(toInstaDbPayload(nextRow, rowOrder)),
         headers: supabaseHeaders('return=representation'),
         method: 'POST',
       })
