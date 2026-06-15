@@ -1790,7 +1790,7 @@ function EmailDashboard() {
             ) : null}
 
             {!isLoadingRows && visibleRows.map((row) => (
-              <tr key={row.id}>
+              <tr className={row.scheduled ? 'is-scheduled' : undefined} key={row.id}>
                 <td>
                   <input
                     aria-label="Email date"
@@ -2925,7 +2925,7 @@ function SmsDashboard() {
 
             {!isLoadingRows &&
               visibleRows.map((row) => (
-                <tr key={row.id}>
+                <tr className={row.scheduled ? 'is-scheduled' : undefined} key={row.id}>
                   <td>
                     <input
                       aria-label="SMS date"
@@ -4748,7 +4748,7 @@ function AdsBerberineDashboard() {
 
             {!isLoadingRows &&
               visibleRows.map((row) => (
-                <tr key={row.id}>
+                <tr className={row.scheduled ? 'is-scheduled' : undefined} key={row.id}>
                   <td>
                     <input
                       aria-label="Ads Supplement date"

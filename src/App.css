@@ -3584,6 +3584,17 @@ a.title-motion-icon:focus-visible {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+.email-table tr.is-scheduled td,
+.email-table tr.is-scheduled:nth-child(even) td {
+  background: rgba(255, 244, 207, 0.68);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.email-table tr.is-scheduled:hover td {
+  background: rgba(255, 239, 188, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
 .email-table input,
 .email-table textarea,
 .email-table select {
