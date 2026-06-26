@@ -41,6 +41,13 @@ const marketingRoutes: MarketingRoute[] = [
     description: 'Prepare static and responsive banner directions for quick deployment.',
   },
   {
+    label: 'Communities',
+    path: '/communities',
+    eyebrow: 'Community',
+    title: 'Communities',
+    description: 'Track community placements, platform links, approvals, and notes in one shared board.',
+  },
+  {
     label: 'Email',
     path: '/email',
     eyebrow: 'Lifecycle',
@@ -331,6 +338,25 @@ type MockupDbRow = {
   obs: string | null
 }
 
+type CommunityRow = {
+  id: string
+  date: string
+  platform: string
+  link: string
+  approval: string
+  obs: string
+}
+
+type CommunityDbRow = {
+  id: string
+  row_order: number
+  date: string
+  platform: string | null
+  link: string | null
+  approval: string
+  obs: string | null
+}
+
 type AdsDharmaRow = {
   id: string
   date: string
@@ -558,6 +584,17 @@ const initialMockupRows: MockupRow[] = [
     date: 'May 04 to 15',
     link: '',
     mockupLink: '',
+    obs: '',
+    platform: 'INSTAGRAM',
+  },
+]
+
+const initialCommunityRows: CommunityRow[] = [
+  {
+    id: 'communities-1',
+    approval: 'Pending Approval',
+    date: 'May 04 to 15',
+    link: '',
     obs: '',
     platform: 'INSTAGRAM',
   },
@@ -849,6 +886,29 @@ function toMockupDbPayload(row: MockupRow, rowOrder: number) {
     platform: row.platform,
     link: row.link,
     mockup_link: row.mockupLink,
+    approval: toStoredApproval(row.approval),
+    obs: row.obs,
+  }
+}
+
+function toCommunityRow(row: CommunityDbRow): CommunityRow {
+  return {
+    id: row.id,
+    approval: normalizeApproval(row.approval),
+    date: row.date,
+    link: row.link || '',
+    obs: row.obs || '',
+    platform: translateLegacyEnglish(row.platform),
+  }
+}
+
+function toCommunityDbPayload(row: CommunityRow, rowOrder: number) {
+  return {
+    id: row.id,
+    row_order: rowOrder,
+    date: row.date,
+    platform: row.platform,
+    link: row.link,
     approval: toStoredApproval(row.approval),
     obs: row.obs,
   }
@@ -4129,6 +4189,336 @@ function MockupDashboard() {
   )
 }
 
+function CommunitiesDashboard() {
+  const [rows, setRows] = useState<CommunityRow[]>([])
+  const [isLoadingRows, setIsLoadingRows] = useState(true)
+  const [communitiesStatus, setCommunitiesStatus] = useState('')
+  const [communitiesError, setCommunitiesError] = useState('')
+  const pagination = useTablePagination(rows.length)
+  const visibleRows = rows.slice(pagination.startIndex, pagination.endIndex)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadRows() {
+      setIsLoadingRows(true)
+      setCommunitiesError('')
+
+      try {
+        const response = await fetch(
+          `${supabaseRestUrl}/communities_dashboard_rows?select=*&order=row_order.asc,created_at.asc`,
+          {
+            headers: supabaseHeaders(),
+          },
+        )
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Could not load Communities dashboard rows.')
+        }
+
+        if (isMounted) {
+          setRows(sortRowsByDate((data as CommunityDbRow[]).map(toCommunityRow)))
+          setCommunitiesStatus(data.length ? 'Loaded from Supabase.' : 'No saved community rows yet.')
+        }
+      } catch (error) {
+        if (isMounted) {
+          setRows(sortRowsByDate(initialCommunityRows))
+          setCommunitiesError(
+            error instanceof Error
+              ? error.message
+              : 'Could not load Communities dashboard rows.',
+          )
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingRows(false)
+        }
+      }
+    }
+
+    loadRows()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  function updateRow(id: string, changes: Partial<CommunityRow>) {
+    let updatedRow: CommunityRow | null = null
+    let rowOrder = 0
+
+    setRows((currentRows) => {
+      const nextRows = sortRowsByDate(
+        currentRows.map((row) => {
+          if (row.id !== id) return row
+
+          updatedRow = { ...row, ...changes }
+          return updatedRow
+        }),
+      )
+      rowOrder = nextRows.findIndex((row) => row.id === id)
+      return nextRows
+    })
+
+    window.setTimeout(() => {
+      if (updatedRow) {
+        saveRow(updatedRow, rowOrder)
+      }
+    }, 0)
+  }
+
+  async function saveRow(row: CommunityRow, rowOrder: number) {
+    if (!supabaseAnonKey) {
+      setCommunitiesError('Missing VITE_SUPABASE_ANON_KEY.')
+      return
+    }
+
+    setCommunitiesStatus('Saving...')
+    setCommunitiesError('')
+
+    try {
+      const response = await fetch(
+        `${supabaseRestUrl}/communities_dashboard_rows?id=eq.${row.id}`,
+        {
+          body: JSON.stringify(toCommunityDbPayload(row, rowOrder)),
+          headers: supabaseHeaders(),
+          method: 'PATCH',
+        },
+      )
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Could not save community row.')
+      }
+
+      setCommunitiesStatus('Saved to Supabase.')
+    } catch (error) {
+      setCommunitiesError(error instanceof Error ? error.message : 'Could not save community row.')
+    }
+  }
+
+  async function addRow() {
+    const nextRow: CommunityRow = {
+      id: crypto.randomUUID(),
+      approval: 'Pending Approval',
+      date: '',
+      link: '',
+      obs: '',
+      platform: '',
+    }
+
+    const nextRows = sortRowsByDate([...rows, nextRow])
+    const rowOrder = nextRows.findIndex((row) => row.id === nextRow.id)
+
+    setRows(nextRows)
+    setCommunitiesStatus('Saving new community row...')
+    setCommunitiesError('')
+
+    try {
+      const response = await fetch(`${supabaseRestUrl}/communities_dashboard_rows`, {
+        body: JSON.stringify(toCommunityDbPayload(nextRow, rowOrder)),
+        headers: supabaseHeaders('return=representation'),
+        method: 'POST',
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Could not create community row.')
+      }
+
+      setCommunitiesStatus('New community row saved.')
+    } catch (error) {
+      setCommunitiesError(error instanceof Error ? error.message : 'Could not create community row.')
+    }
+  }
+
+  async function removeRow(id: string) {
+    setRows((currentRows) => currentRows.filter((row) => row.id !== id))
+    setCommunitiesStatus('Deleting community row...')
+    setCommunitiesError('')
+
+    try {
+      const response = await fetch(`${supabaseRestUrl}/communities_dashboard_rows?id=eq.${id}`, {
+        headers: supabaseHeaders(),
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Could not delete community row.')
+      }
+
+      setCommunitiesStatus('Community row deleted.')
+    } catch (error) {
+      setCommunitiesError(error instanceof Error ? error.message : 'Could not delete community row.')
+    }
+  }
+
+  function exportCsv() {
+    const headers = ['Date', 'Platform', 'Link', 'Approval', 'Notes']
+    const body = rows.map((row) =>
+      [row.date, row.platform, row.link, row.approval, row.obs].map(csvEscape).join(','),
+    )
+
+    downloadTextFile(
+      'communities-dashboard.csv',
+      [headers.map(csvEscape).join(','), ...body].join('\n'),
+      'text/csv',
+    )
+  }
+
+  return (
+    <section
+      className="email-dashboard communities-dashboard"
+      aria-labelledby="communities-dashboard-title"
+    >
+      <div className="email-toolbar">
+        <div>
+          <p className="eyebrow">Community Review</p>
+          <h2 id="communities-dashboard-title">Communities Table</h2>
+          <p>
+            Track community platforms, live links, approval status, and notes before
+            publishing.
+          </p>
+        </div>
+
+        <div className="toolbar-actions">
+          <button onClick={addRow} type="button">
+            Add row
+          </button>
+          <button onClick={exportCsv} type="button">
+            Export CSV
+          </button>
+          <button
+            onClick={() =>
+              downloadTextFile(
+                'communities-dashboard.json',
+                JSON.stringify(rows, null, 2),
+                'application/json',
+              )
+            }
+            type="button"
+          >
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      <div className="email-sync-status" aria-live="polite">
+        <span>{isLoadingRows ? 'Loading community rows from Supabase...' : communitiesStatus}</span>
+        {communitiesError ? <strong>{communitiesError}</strong> : null}
+      </div>
+
+      <TableScroller>
+        <table className="email-table communities-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Platform</th>
+              <th>Link</th>
+              <th>Approval</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoadingRows ? (
+              <tr>
+                <td className="empty-table-message" colSpan={6}>
+                  Loading saved community rows...
+                </td>
+              </tr>
+            ) : null}
+
+            {!isLoadingRows && rows.length === 0 ? (
+              <tr>
+                <td className="empty-table-message" colSpan={6}>
+                  No saved community rows yet. Add a row to start planning.
+                </td>
+              </tr>
+            ) : null}
+
+            {!isLoadingRows &&
+              visibleRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      aria-label="Community date"
+                      onChange={(event) => updateRow(row.id, { date: event.target.value })}
+                      placeholder="May 04 to 15"
+                      value={row.date}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      aria-label="Community platform"
+                      onChange={(event) => updateRow(row.id, { platform: event.target.value })}
+                      placeholder="INSTAGRAM"
+                      value={row.platform}
+                    />
+                  </td>
+                  <td>
+                    <LinkField
+                      aria-label="Community link"
+                      onChange={(value) => updateRow(row.id, { link: value })}
+                      placeholder="https://"
+                      value={row.link}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      aria-label="Community approval"
+                      className={`approval-select ${row.approval
+                        .toLowerCase()
+                        .replaceAll(' ', '-')}`}
+                      onChange={(event) =>
+                        updateRow(row.id, { approval: event.target.value })
+                      }
+                      value={row.approval}
+                    >
+                      {approvalOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <textarea
+                      aria-label="Community observations"
+                      onChange={(event) => updateRow(row.id, { obs: event.target.value })}
+                      placeholder="Notes"
+                      value={row.obs}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="delete-row"
+                      onClick={() => removeRow(row.id)}
+                      type="button"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </TableScroller>
+
+      <TablePagination
+        endIndex={pagination.endIndex}
+        onPageChange={pagination.setPage}
+        page={pagination.page}
+        startIndex={pagination.startIndex}
+        totalPages={pagination.totalPages}
+        totalRows={rows.length}
+      />
+    </section>
+  )
+}
+
 function AdsDharmaDashboard() {
   const [rows, setRows] = useState<AdsDharmaRow[]>([])
   const [isLoadingRows, setIsLoadingRows] = useState(true)
@@ -5302,6 +5692,7 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
   const isInsta = route.path === '/insta'
   const isTiktok = route.path === '/tiktok'
   const isMockup = route.path === '/mockup'
+  const isCommunities = route.path === '/communities'
   const isAdsDharma = route.path === '/ads-dharma'
   const isAdsBerberine = route.path === '/ads-berberine'
   const isBanner = route.path === '/banner'
@@ -5325,13 +5716,15 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
             ? 'Coordinate TikTok video links, captions, approval status, and content notes for short-form campaign production.'
             : isMockup
               ? 'Review creative mockups, platform placements, asset links, approvals, and revision notes before production.'
-              : isAdsDharma
-                ? 'Manage injection ad copy, creative links, landing links, readiness checks, and approvals for paid media production.'
-                : isAdsBerberine
-                  ? 'Coordinate Berberine ad copy, creative assets, links, notes, approvals, and scheduling for paid media launches.'
-                  : isBanner
-                    ? 'Plan banner flight dates, display copy, art links, approvals, and launch notes for every placement.'
-                  : `This routed page is ready for your ${route.label.toLowerCase()} workflow, assets, and campaign controls.`
+              : isCommunities
+                ? 'Manage community platform links, approval status, and notes from a focused production table.'
+                : isAdsDharma
+                  ? 'Manage injection ad copy, creative links, landing links, readiness checks, and approvals for paid media production.'
+                  : isAdsBerberine
+                    ? 'Coordinate Berberine ad copy, creative assets, links, notes, approvals, and scheduling for paid media launches.'
+                    : isBanner
+                      ? 'Plan banner flight dates, display copy, art links, approvals, and launch notes for every placement.'
+                      : `This routed page is ready for your ${route.label.toLowerCase()} workflow, assets, and campaign controls.`
   const titleIconClass = `title-motion-icon title-icon-${
     route.path === '/' ? 'home' : route.path.replace('/', '')
   }`
@@ -5495,18 +5888,18 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
                   : isSms
                     ? 'panel-icon sms-icon'
                     : isInsta
-                      ? 'panel-icon insta-icon'
-                      : isTiktok
-                        ? 'panel-icon tiktok-icon'
-                        : isMockup
-                          ? 'panel-icon mockup-icon'
-                          : isAdsDharma
-                            ? 'panel-icon ads-icon'
-                            : isAdsBerberine
-                              ? 'panel-icon berberine-icon'
-                              : isBanner
-                                ? 'panel-icon banner-icon'
-                                : 'panel-icon'
+                        ? 'panel-icon insta-icon'
+                        : isTiktok
+                          ? 'panel-icon tiktok-icon'
+                          : isMockup || isCommunities
+                            ? 'panel-icon mockup-icon'
+                            : isAdsDharma
+                              ? 'panel-icon ads-icon'
+                              : isAdsBerberine
+                                ? 'panel-icon berberine-icon'
+                                : isBanner
+                                  ? 'panel-icon banner-icon'
+                                  : 'panel-icon'
               }
               aria-hidden="true"
             >
@@ -5542,7 +5935,7 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
                   <span className="tiktok-wave wave-one" />
                   <span className="tiktok-wave wave-two" />
                 </>
-              ) : isMockup ? (
+              ) : isMockup || isCommunities ? (
                 <>
                   <span className="mockup-board" />
                   <span className="mockup-tile tile-one" />
@@ -5633,6 +6026,7 @@ function MarketingPage({ route }: { route: MarketingRoute }) {
       {isInsta ? <InstaDashboard /> : null}
       {isTiktok ? <TiktokDashboard /> : null}
       {isMockup ? <MockupDashboard /> : null}
+      {isCommunities ? <CommunitiesDashboard /> : null}
       {isAdsDharma ? <AdsDharmaDashboard /> : null}
       {isAdsBerberine ? <AdsBerberineDashboard /> : null}
       {isBanner ? <BannerDashboard /> : null}

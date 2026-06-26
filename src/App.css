@@ -3520,6 +3520,10 @@ a.title-motion-icon:focus-visible {
   min-width: 1180px;
 }
 
+.communities-table {
+  min-width: 1040px;
+}
+
 .ads-dharma-table {
   min-width: 1420px;
 }
