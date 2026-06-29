@@ -6217,9 +6217,11 @@ function App() {
   const location = useLocation()
   const [session, setSession] = useState<Session | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [isNavOpen, setIsNavOpen] = useState(false)
 
   useEffect(() => {
     window.scrollTo({ left: 0, top: 0 })
+    setIsNavOpen(false)
   }, [location.pathname])
 
   useEffect(() => {
@@ -6281,12 +6283,32 @@ function App() {
           </span>
         </NavLink>
 
-        <nav className="tabs" aria-label="Marketing sections">
+        <button
+          aria-controls="marketing-sections"
+          aria-expanded={isNavOpen}
+          className="nav-menu-button"
+          onClick={() => setIsNavOpen((isOpen) => !isOpen)}
+          type="button"
+        >
+          <span>Sections</span>
+          <span className="nav-menu-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+
+        <nav
+          className={isNavOpen ? 'tabs open' : 'tabs'}
+          id="marketing-sections"
+          aria-label="Marketing sections"
+        >
           {marketingRoutes.map((route) => (
             <NavLink
               className={({ isActive }) => (isActive ? 'tab active' : 'tab')}
               end={route.path === '/'}
               key={route.path}
+              onClick={() => setIsNavOpen(false)}
               to={route.path}
             >
               {route.label}
