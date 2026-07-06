@@ -344,6 +344,7 @@ type CommunityRow = {
   platform: string
   link: string
   approval: string
+  caption: string
   obs: string
 }
 
@@ -354,6 +355,7 @@ type CommunityDbRow = {
   platform: string | null
   link: string | null
   approval: string
+  caption: string | null
   obs: string | null
 }
 
@@ -593,6 +595,7 @@ const initialCommunityRows: CommunityRow[] = [
   {
     id: 'communities-1',
     approval: 'Pending Approval',
+    caption: '',
     date: 'May 04 to 15',
     link: '',
     obs: '',
@@ -895,6 +898,7 @@ function toCommunityRow(row: CommunityDbRow): CommunityRow {
   return {
     id: row.id,
     approval: normalizeApproval(row.approval),
+    caption: translateLegacyEnglish(row.caption),
     date: row.date,
     link: row.link || '',
     obs: row.obs || '',
@@ -910,6 +914,7 @@ function toCommunityDbPayload(row: CommunityRow, rowOrder: number) {
     platform: row.platform,
     link: row.link,
     approval: toStoredApproval(row.approval),
+    caption: row.caption,
     obs: row.obs,
   }
 }
@@ -4302,6 +4307,7 @@ function CommunitiesDashboard() {
     const nextRow: CommunityRow = {
       id: crypto.randomUUID(),
       approval: 'Pending Approval',
+      caption: '',
       date: '',
       link: '',
       obs: '',
@@ -4356,9 +4362,11 @@ function CommunitiesDashboard() {
   }
 
   function exportCsv() {
-    const headers = ['Date', 'Platform', 'Link', 'Approval', 'Notes']
+    const headers = ['Date', 'Platform', 'Link', 'Approval', 'Caption', 'Notes']
     const body = rows.map((row) =>
-      [row.date, row.platform, row.link, row.approval, row.obs].map(csvEscape).join(','),
+      [row.date, row.platform, row.link, row.approval, row.caption, row.obs]
+        .map(csvEscape)
+        .join(','),
     )
 
     downloadTextFile(
@@ -4418,6 +4426,7 @@ function CommunitiesDashboard() {
               <th>Platform</th>
               <th>Link</th>
               <th>Approval</th>
+              <th>Caption</th>
               <th>Notes</th>
               <th></th>
             </tr>
@@ -4425,7 +4434,7 @@ function CommunitiesDashboard() {
           <tbody>
             {isLoadingRows ? (
               <tr>
-                <td className="empty-table-message" colSpan={6}>
+                <td className="empty-table-message" colSpan={7}>
                   Loading saved community rows...
                 </td>
               </tr>
@@ -4433,7 +4442,7 @@ function CommunitiesDashboard() {
 
             {!isLoadingRows && rows.length === 0 ? (
               <tr>
-                <td className="empty-table-message" colSpan={6}>
+                <td className="empty-table-message" colSpan={7}>
                   No saved community rows yet. Add a row to start planning.
                 </td>
               </tr>
@@ -4483,6 +4492,14 @@ function CommunitiesDashboard() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td>
+                    <textarea
+                      aria-label="Community caption"
+                      onChange={(event) => updateRow(row.id, { caption: event.target.value })}
+                      placeholder="Caption"
+                      value={row.caption}
+                    />
                   </td>
                   <td>
                     <textarea
